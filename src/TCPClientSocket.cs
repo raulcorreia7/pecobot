@@ -28,6 +28,14 @@ namespace MightyPecoBot.Network
             this.PORT = port;
         }
 
+        ~TCPClientSocket()
+        {
+            StreamWriter.Close();
+            StreamReader.Close();
+            NetworkStream.Close();
+            Socket.Close();
+        }
+
         public void Connect()
         {
             if (!Socket.Connected)

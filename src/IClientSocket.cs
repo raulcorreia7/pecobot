@@ -8,6 +8,7 @@ namespace MightyPecoBot.Network
     {
 
         void Connect();
+        bool IsConnected();
         void Send(string message);
         string Receive();
 

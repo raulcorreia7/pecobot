@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using MightyPecoBot.Network;
 
 namespace MightyPecoBot
 {
@@ -12,33 +13,23 @@ namespace MightyPecoBot
         static void Main(string[] args)
         {
             Thread t;
-            string url = null;
-            url = "irc.chat.twitch.tv";
+            string url = "irc.chat.twitch.tv";
             int port = 6667;
 
-            TcpClient client = new TcpClient(url, port);
-            NetworkStream stream = client.GetStream();
-            StreamReader sr = new StreamReader(stream);
-            StreamWriter sw = new StreamWriter(stream);
+            IClientSocket Socket = new TCPClientSocket(url, port);
 
-            t = new Thread(() => OutputToConsole(sr));
+            t = new Thread(() => OutputToConsole(Socket));
             t.IsBackground = true;
             t.Start();
 
-            bool connected = client.Connected;
-            if (connected) Console.WriteLine("Connected!");
-            bool flag = stream.CanRead & stream.CanWrite;
-            if (!flag) return;
+            if (Socket.IsConnected()) Console.WriteLine("Connected!");
 
-
-            Byte[] data = new Byte[256];
-            String responseData = String.Empty;
             string oath_token = System.IO.File.ReadAllText("oath.txt");
 
-            mandarMensagem(sw, "PASS " + oath_token);
-            mandarMensagem(sw, "NICK mightypecobot");
-            mandarMensagem(sw, "JOIN #frosticecold");
-            mandarMensagem(sw, "PRIVMSG #frosticecold :OLA PESSOAL");
+            mandarMensagem(Socket, "PASS " + oath_token);
+            mandarMensagem(Socket, "NICK mightypecobot");
+            mandarMensagem(Socket, "JOIN #frosticecold");
+            mandarMensagem(Socket, "PRIVMSG #frosticecold :OLA PESSOAL");
 
 
             while (running)
@@ -47,34 +38,31 @@ namespace MightyPecoBot
                 if ((read = Console.ReadLine()) != null)
                 {
                     Console.WriteLine(read);
-                    sendToChannel(sw, read);
+                    sendToChannel(Socket, read);
                 }
             }
 
-
+            Console.WriteLine("Exiting application...");
+            t.Interrupt();
             if (!t.Join(250))
             {
                 t.Abort();
             }
-            sw.Close();
-            sr.Close();
-            stream.Close();
-            client.Close();
+
         }
 
-        public static void OutputToConsole(StreamReader sr)
+        public static void OutputToConsole(IClientSocket socket)
         {
 
             try
             {
                 Console.WriteLine("Output to console");
                 string s_data;
-                //while ((s_data = sr.ReadLine()) != null)
                 while (running)
                 {
                     try
                     {
-                        s_data = sr.ReadLine();
+                        s_data = socket.Receive();
                         Console.WriteLine(s_data);
                     }
                     catch (Exception) { }
@@ -90,20 +78,15 @@ namespace MightyPecoBot
             return;
         }
 
-        public static void mandarMensagem(StreamWriter sw, string msg)
+        public static void mandarMensagem(IClientSocket socket, string msg)
         {
-            sw.WriteLine(msg);
-            sw.Flush();
+            socket.Send(msg);
         }
 
-        public static void sendToChannel(StreamWriter sw, string msg)
+        public static void sendToChannel(IClientSocket socket, string msg)
         {
             string data = "PRIVMSG #frosticecold :" + msg;
-            mandarMensagem(sw, data);
-        }
-        static Byte[] convertString(string message)
-        {
-            return Encoding.ASCII.GetBytes(message);
+            mandarMensagem(socket, data);
         }
     }
 
