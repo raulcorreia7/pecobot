@@ -1,0 +1,2 @@
+# pecobot
+dotnetcore twitch bot
