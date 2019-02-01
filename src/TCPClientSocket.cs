@@ -41,7 +41,6 @@ namespace MightyPecoBot.Network
             if (!Socket.Connected)
             {
                 Socket.Connect(URL, PORT);
-
             }
         }
 
