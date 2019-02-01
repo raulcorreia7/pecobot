@@ -1,0 +1,9 @@
+
+Pecobot:
+  Socket:
+    ☐ TCP
+    ☐ Websocket
+    ☐ SSL?
+  Protocol:
+    ☐ ?
+
