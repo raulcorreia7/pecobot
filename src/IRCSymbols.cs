@@ -36,6 +36,13 @@ namespace MightyPecoBot
 
             public const string COMMERCIAL = "/commercial";
             public const string DELETE = "/delete";
+            public const string DISCONNECT = "/delete";
+        }
+
+        public class ChannelCommands
+        {
+            public const string GITHUB = "!github";
+
         }
         public const string PRIVMSG = "PRIVMSG";
         public const string NICK = "NICK";
@@ -46,10 +53,6 @@ namespace MightyPecoBot
         public const string PING = "PING";
 
         public const string PART = "PART";
-
-
-
-
 
         public static string FormatTwoParameters(string p1, string p2)
         {

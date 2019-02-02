@@ -1,4 +1,6 @@
 
+using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using MightyPecoBot.Network;
@@ -7,6 +9,7 @@ namespace MightyPecoBot
     class TwitchBot
     {
 
+        public const string GITHUB_URL = "https://github.com/raulcorreia7/pecobot";
         public const string URL = "irc.chat.twitch.tv";
 
         //FIXME: Be aware of port, may change with SSL and Websockets
@@ -19,14 +22,66 @@ namespace MightyPecoBot
         public volatile bool Running = false;
 
         public Thread ReceivingThread;
+
+        List<Action<string>> Actions = new List<Action<string>>();
         public TwitchBot(string username, string channel)
         {
             Username = username;
             Channel = channel;
             Socket = new TCPClientSocket(URL, PORT);
             ReceivingThread = new Thread(ReceiveData);
+            DefaultActions();
         }
 
+        ~TwitchBot()
+        {
+            CleanUp();
+
+        }
+
+        private void DefaultActions()
+        {
+            Actions.Add((string data) =>
+            {
+                if (Regex.Match(data, IRCSymbols.ChannelCommands.GITHUB).Success)
+                {
+                    SendToChannel(GITHUB_URL);
+                }
+
+            });
+
+        }
+        private void CleanUp()
+        {
+            BotLogger.LogDebug("Cleaning up the bot!");
+            try
+            {
+                ReceivingThread.Interrupt();
+                if (!ReceivingThread.Join(1000))
+                {
+                    ReceivingThread.Abort();
+                }
+
+            }
+            catch (Exception e)
+            {
+                if (e is ThreadAbortException tabex)
+                {
+                    BotLogger.LogDebug("Couldn't terminate the thread in time. Forced it's shutdown.");
+                }
+                else
+                {
+                    if (e is ThreadInterruptedException tiex)
+                    {
+                        BotLogger.LogDebug("Interrupted the exception!");
+                    }
+
+                }
+            }
+
+            BotLogger.LogDebug("Thread terminated!");
+
+        }
 
         public void Connect(string oauth)
         {
@@ -67,6 +122,13 @@ namespace MightyPecoBot
 
         private void ReceiveData()
         {
+            /**
+                Need to add some kinds of composition
+                so instead of a big if statement,
+                it iterates over N expressions.
+                This way users can add code/logic without
+                messing with the if statements
+             */
             while (Running)
             {
                 string data = null;
@@ -94,6 +156,10 @@ namespace MightyPecoBot
                                 BotLogger.LogMessage($"<{username}> {message}");
                             }
                         }
+                    }
+                    foreach (var action in Actions)
+                    {
+                        action(data);
                     }
                 }
             }
@@ -141,17 +207,36 @@ namespace MightyPecoBot
             SendToChannel(data);
         }
 
+        /**
+            Send a commercial break
+         */
         public void Commercial()
         {
             SendToChannel(IRCSymbols.Commands.COMMERCIAL);
         }
-
+        /**
+        
+            Sends delete command
+            * Caveat: I don't know what it does
+         */
         public void Delete()
         {
             SendToChannel(IRCSymbols.Commands.DELETE);
         }
 
-        
+        /**
+            Disconnects the bot,
+            it stops everything!
+         */
+        public void Disconnect()
+        {
+            Running = false;
+            SendToChannel(IRCSymbols.Commands.DISCONNECT);
+            CleanUp();
+
+        }
+
+
 
     }
 }
