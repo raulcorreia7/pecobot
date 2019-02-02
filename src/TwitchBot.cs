@@ -43,7 +43,7 @@ namespace MightyPecoBot
         {
             Actions.Add((string data) =>
             {
-                if (Regex.Match(data, IRCSymbols.ChannelCommands.GITHUB).Success)
+                if (Regex.Match(data, IRCSymbols.CustomChannelCommands.GITHUB).Success)
                 {
                     SendToChannel(GITHUB_URL);
                 }
@@ -236,7 +236,18 @@ namespace MightyPecoBot
 
         }
 
+        /**
+            Sets the channel chat to be emote only(true) or not (false)
+         */
+        public void EmoteOnly(bool isEmoteOnly)
+        {
 
+            if (isEmoteOnly)
+                SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_ON);
+            else
+                SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_OFF);
+        }
 
+        
     }
 }

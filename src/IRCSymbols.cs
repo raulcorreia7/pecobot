@@ -37,9 +37,14 @@ namespace MightyPecoBot
             public const string COMMERCIAL = "/commercial";
             public const string DELETE = "/delete";
             public const string DISCONNECT = "/delete";
+
+            public const string EMOTE_ONLY_ON = "/emoteonly";
+
+            public const string EMOTE_ONLY_OFF = "/emoteonlyoff";
+
         }
 
-        public class ChannelCommands
+        public class CustomChannelCommands
         {
             public const string GITHUB = "!github";
 
