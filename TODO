@@ -7,5 +7,11 @@ Pecobot:
   Protocol:
     ☐ ?
   ☐ Events
-  ☐ Reimplement a way to see console output
+  ✔ Reimplement a way to see console output @done(19-02-02 16:36)
+  Things to do:
+    ☐ Parsing messages
+    ☐ Respond to PONG requests
+    ☐ UML
+    ☐ Need to Handle Exceptions
+    ☐ Better Logging messages
 

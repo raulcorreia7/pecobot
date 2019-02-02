@@ -10,13 +10,26 @@ namespace MightyPecoBot
 {
     class Program
     {
-        static string USERNAME = "mightypecobot";
-        static string CHANNEL = "frosticecold";
+        /*
+            Your username
+         */
+        const string USERNAME = "mightypecobot";
+
+        /*
+            Your Channel
+         */
+        const string CHANNEL = "frosticecold";
 
         static volatile bool running = true;
         static void Main(string[] args)
         {
+            /*
+                Select what log level you want
+             */
             BotLogger.LogLevel = LOG_LEVEL.DEBUG;
+            /*
+                You need to provide your own token
+             */
             string OATH_TOKEN = System.IO.File.ReadAllText("oath.txt");
             TwitchBot clientbot = new TwitchBot(USERNAME, CHANNEL);
             clientbot.Connect(OATH_TOKEN);
@@ -25,65 +38,12 @@ namespace MightyPecoBot
 
             while (clientbot.Running)
             {
-                Console.ReadLine();
+                //Console.ReadKey();
+                string data = Console.ReadLine();
+                if (!string.IsNullOrEmpty(data))
+                    clientbot.SendToIRC(data);
             }
-            // Thread thread;
-            // thread = new Thread(() => OutputToConsole(Socket));
-            // thread.IsBackground = true;
-            // thread.Start();
-
-
-
-
-
-
-            // while (running)
-            // {
-            //     string read = null;
-            //     if ((read = Console.ReadLine()) != null)
-            //     {
-            //         Console.WriteLine(read);
-            //         sendToChannel(Socket, read);
-            //     }
-            // }
-
-            // Console.WriteLine("Exiting application...");
-            // thread.Interrupt();
-            // if (!thread.Join(250))
-            // {
-            //     thread.Abort();
-            // }
-
         }
-
-        public static void OutputToConsole(IClientSocket socket)
-        {
-
-            try
-            {
-                Console.WriteLine("Output to console");
-                string s_data;
-                while (running)
-                {
-                    try
-                    {
-                        s_data = socket.Receive();
-                        Console.WriteLine(s_data);
-                    }
-                    catch (Exception) { }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (ex is ThreadAbortException || ex is ThreadInterruptedException)
-                    Console.WriteLine("Receiving Thread Interrupted");
-                else
-                    Console.WriteLine("Oopsie!");
-            }
-            return;
-        }
-
-
 
     }
 

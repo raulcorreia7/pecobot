@@ -46,7 +46,8 @@ namespace MightyPecoBot.Network
 
         public bool IsConnected() => Socket.Connected;
         public string Receive()
-        {
+        {   
+            //This has an exception, we need to treat it
             return StreamReader.ReadLine();
         }
 
