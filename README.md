@@ -1,2 +1,2 @@
 # pecobot
-dotnetcore twitch bot
+## dotnetcore 2.1 twitch bot
