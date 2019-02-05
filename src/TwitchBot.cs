@@ -180,7 +180,7 @@ namespace MightyPecoBot
             BotLogger.LogDebug("[ >> Sending PONG ]");
             SendToIRC("PONG :tmi.twitch.tv");
         }
-        public void SendOauth(string oauth)
+        private void SendOauth(string oauth)
         {
             BotLogger.LogDebug("[ >> Sending OAUTH >");
             SendToIRC(IRCSymbols.FormatOAuth(oauth));
@@ -341,12 +341,12 @@ namespace MightyPecoBot
             this.Callbacks_ChannelMessage.Add(callback);
         }
 
-        public void onJoinChannel(Action<UserActionUponChannel> callback)
+        public void OnJoinChannel(Action<UserActionUponChannel> callback)
         {
             this.Callbacks_JoinedChannel.Add(callback);
         }
 
-        public void onLeaveChannel(Action<UserActionUponChannel> callback)
+        public void OnLeaveChannel(Action<UserActionUponChannel> callback)
         {
             this.Callbacks_LeaveChannel.Add(callback);
         }
