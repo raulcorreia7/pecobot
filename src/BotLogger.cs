@@ -48,7 +48,7 @@ namespace MightyPecoBot
                 case LOG_LEVEL.NO_LOG:
                     return "NO LOG";
                 case LOG_LEVEL.MESSAGES_ONLY:
-                    return "MESSAGES";
+                    return "MESSAGE";
                 case LOG_LEVEL.DEBUG:
                     return "DEBUG";
                 default:

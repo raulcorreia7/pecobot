@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using MightyPecoBot.Network;
+using MightyPecoBot.Parsing;
+
 namespace MightyPecoBot
 {
     class TwitchBot
@@ -24,6 +26,10 @@ namespace MightyPecoBot
         public Thread ReceivingThread;
 
         List<Action<string>> Actions = new List<Action<string>>();
+
+        List<Action<ChannelMessage>> Callbacks_ChannelMessage = new List<Action<ChannelMessage>>();
+        List<Action<UserActionUponChannel>> Callbacks_JoinedChannel = new List<Action<UserActionUponChannel>>();
+        List<Action<UserActionUponChannel>> Callbacks_LeaveChannel = new List<Action<UserActionUponChannel>>();
         public TwitchBot(string username, string channel)
         {
             Username = username;
@@ -41,16 +47,73 @@ namespace MightyPecoBot
 
         private void DefaultActions()
         {
+            /*
+                This responds to Ping requests
+             */
             Actions.Add((string data) =>
             {
-                if (Regex.Match(data, IRCSymbols.CustomChannelCommands.GITHUB).Success)
+                if (Regex.Match(data, IRCSymbols.PING).Success)
                 {
-                    SendToChannel(GITHUB_URL);
+                    sendPONG();
+                }
+            });
+            /*
+                This parses the channel,username and message and fires the OnChannelMessage Event
+             */
+            Actions.Add((string data) =>
+            {
+                //If PRIVMSG, fire onMessageEvent
+                //Optimize this to just one regular expression
+                if (Regex.Match(data, IRCSymbols.PRIVMSG).Success)
+                {
+                    Match match = Regex.Match(data, @":(\w+)!.+#(\w+) :(.+)$");
+                    if (match.Success)
+                    {
+                        string username = match.Groups[1].Value;
+                        string channel = match.Groups[2].Value;
+                        string message = match.Groups[3].Value;
+                        ChannelMessage channel_message = new ChannelMessage(channel, username, message);
+                        RunOnChannelMessageCallbacks(channel_message);
+                    }
+                }
+            });
+
+            /*
+                This parses that user joins the channel and fires onJoinChannel callbacks
+             */
+            Actions.Add((string data) =>
+            {
+                Match match = Regex.Match(data, @":(.+)!.+ JOIN #(.+)");
+                if (match.Success)
+                {
+                    UserActionUponChannel joinChannel = new UserActionUponChannel(channel: match.Groups[2].Value, username: match.Groups[1].Value);
+                    RunOnJoinedChannelCallback(joinChannel);
                 }
 
             });
 
+            Actions.Add((string data) =>
+            {
+                Match match = Regex.Match(data, @":(.+)!.+ PART #(.+)");
+                if (match.Success)
+                {
+                    UserActionUponChannel leaveChannel = new UserActionUponChannel(channel: match.Groups[2].Value, username: match.Groups[1].Value);
+                    RunOnLeaveChannelCallback(leaveChannel);
+                }
+
+            });
+
+
+            Callbacks_ChannelMessage.Add((ChannelMessage channelMessage) =>
+            {
+                if (channelMessage.Message.Contains(IRCSymbols.CustomChannelCommands.GITHUB))
+                {
+                    SendToChannel(channel: channelMessage.Channel, message: GITHUB_URL);
+                }
+
+            });
         }
+
         private void CleanUp()
         {
             BotLogger.LogDebug("Cleaning up the bot!");
@@ -87,7 +150,7 @@ namespace MightyPecoBot
         {
             BotLogger.LogDebug("[ >>Connecting! ]");
             Socket.Connect();
-            SendToIRC(IRCSymbols.FormatOAuth(oauth));
+            SendOauth(oauth);
             SendToIRC(IRCSymbols.FormatUsername(Username));
             SendToIRC(IRCSymbols.FormatJoin(Channel));
             RequestTwitchMembershipStateEvents();
@@ -100,10 +163,20 @@ namespace MightyPecoBot
             SendToIRC(IRCSymbols.FormatChannelMessage(Channel, "HelloWorld!"));
         }
 
+        private void sendPONG()
+        {
+            BotLogger.LogDebug("[ >> Sending PONG ]");
+            SendToIRC("PONG :tmi.twitch.tv");
+        }
+        public void SendOauth(string oauth)
+        {
+            BotLogger.LogDebug("[ >> Sending OAUTH >");
+            SendToIRC(IRCSymbols.FormatOAuth(oauth));
+        }
+
         public void SendToIRC(string message)
         {
-            if (!message.ToLower().Contains("oauth"))
-                BotLogger.LogMessage(message);
+            BotLogger.LogMessage(message);
             Socket.Send(message);
         }
         public void SendToChannel(string message)
@@ -113,10 +186,17 @@ namespace MightyPecoBot
             Socket.Send(data);
         }
 
+        public void SendToChannel(string channel, string message)
+        {
+            BotLogger.LogMessage(message);
+            string data = IRCSymbols.FormatChannelMessage(channel, message);
+            Socket.Send(data);
+        }
+
         private void RequestTwitchMembershipStateEvents()
         {
             BotLogger.LogDebug("Requesting Membership capabilities.");
-            string data = "CAP REQ :twitch.tv/membership";
+            string data = "CAP REQ :twitch.tv/membership twitch.tv/commands twitch.tv/tags";
             Socket.Send(data);
         }
 
@@ -140,26 +220,9 @@ namespace MightyPecoBot
 
                     */
                     BotLogger.LogDebug(data);
-                    if (Regex.Match(data, IRCSymbols.PING).Success)
+                    foreach (var callback in Actions)
                     {
-                        SendToIRC("PONG :tmi.twitch.tv");
-                    }
-                    else
-                    {
-                        if (Regex.Match(data, IRCSymbols.PRIVMSG).Success)
-                        {
-                            Match match = Regex.Match(data, @":(\w+)!.+:(.+)$");
-                            if (match.Success)
-                            {
-                                string username = match.Groups[1].Value;
-                                string message = match.Groups[2].Value;
-                                BotLogger.LogMessage($"<{username}> {message}");
-                            }
-                        }
-                    }
-                    foreach (var action in Actions)
-                    {
-                        action(data);
+                        callback(data);
                     }
                 }
             }
@@ -248,6 +311,39 @@ namespace MightyPecoBot
                 SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_OFF);
         }
 
-        
+        private void RunOnChannelMessageCallbacks(ChannelMessage channelMessage)
+        {
+            BotLogger.LogMessage($"#{channelMessage.Channel} <{channelMessage.Username}> {channelMessage.Message}");
+            foreach (var callback in this.Callbacks_ChannelMessage)
+                callback(channelMessage);
+        }
+
+        private void RunOnJoinedChannelCallback(UserActionUponChannel information)
+        {
+            BotLogger.LogMessage($"{information.Username} joined the channel: #{information.Channel}");
+            foreach (var callback in this.Callbacks_JoinedChannel)
+                callback(information);
+        }
+
+        private void RunOnLeaveChannelCallback(UserActionUponChannel information)
+        {
+            BotLogger.LogMessage($"{information.Username} left the channel: #{information.Channel}");
+            foreach (var callback in this.Callbacks_LeaveChannel)
+                callback(information);
+        }
+        public void OnChannelMessage(Action<ChannelMessage> callback)
+        {
+            this.Callbacks_ChannelMessage.Add(callback);
+        }
+
+        public void onJoinChannel(Action<UserActionUponChannel> callback)
+        {
+            this.Callbacks_JoinedChannel.Add(callback);
+        }
+
+        public void onLeaveChannel(Action<UserActionUponChannel> callback)
+        {
+            this.Callbacks_LeaveChannel.Add(callback);
+        }
     }
 }
