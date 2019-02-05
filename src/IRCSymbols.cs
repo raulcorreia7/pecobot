@@ -42,6 +42,56 @@ namespace MightyPecoBot
 
             public const string EMOTE_ONLY_OFF = "/emoteonlyoff";
 
+            public const string FOLLOWERS_ON = "/followers";
+
+            public const string FOLLOWERS_OFF = "/followersoff";
+
+            public const string HELP = "/help";
+
+            public const string HOST = "/host";
+
+            public const string UNHOST = "/unhost";
+
+            public const string MARKER = "/marker";
+
+            public const string ME = "/me";
+
+            public const string PROMOTE_TO_MOD = "/mod";
+
+            public const string UNMOD = "/unmod";
+
+            public const string MODS = "/mods";
+
+            public const string R9KBETA_ON = "/r9kbeta";
+
+            public const string R9KBETA_OFF = "/r9kbetaoff";
+
+            public const string RAID = "/raid";
+
+            public const string UNRAID = "/unraid";
+
+            public const string SLOW_ON = "/slow";
+
+            public const string SLOW_OFF = "/slowoff";
+
+            public const string SUBSCRIBERS_ONLY = "/subscribers";
+
+            public const string SUBSCRIBERS_OFF = "/subscribersoff";
+
+            public const string TIMEOUT = "/timeout";
+
+            public const string UNTIMEOUT = "/untimeout";
+
+            public const string VIP = "/vip";
+
+            public const string UNVIP = "/unvip";
+
+            public const string VIPS = "/vips";
+
+            public const string WHISPER = "/w";
+
+
+
         }
 
         public class CustomChannelCommands

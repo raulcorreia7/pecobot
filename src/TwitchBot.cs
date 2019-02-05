@@ -25,7 +25,7 @@ namespace MightyPecoBot
 
         public Thread ReceivingThread;
 
-        List<Action<string>> Actions = new List<Action<string>>();
+        List<Action<string>> MajorCallbacks = new List<Action<string>>();
 
         List<Action<ChannelMessage>> Callbacks_ChannelMessage = new List<Action<ChannelMessage>>();
         List<Action<UserActionUponChannel>> Callbacks_JoinedChannel = new List<Action<UserActionUponChannel>>();
@@ -50,7 +50,7 @@ namespace MightyPecoBot
             /*
                 This responds to Ping requests
              */
-            Actions.Add((string data) =>
+            MajorCallbacks.Add((string data) =>
             {
                 if (Regex.Match(data, IRCSymbols.PING).Success)
                 {
@@ -60,7 +60,7 @@ namespace MightyPecoBot
             /*
                 This parses the channel,username and message and fires the OnChannelMessage Event
              */
-            Actions.Add((string data) =>
+            MajorCallbacks.Add((string data) =>
             {
                 //If PRIVMSG, fire onMessageEvent
                 //Optimize this to just one regular expression
@@ -72,7 +72,19 @@ namespace MightyPecoBot
                         string username = match.Groups[1].Value;
                         string channel = match.Groups[2].Value;
                         string message = match.Groups[3].Value;
-                        ChannelMessage channel_message = new ChannelMessage(channel, username, message);
+                        Match match_message_id = Regex.Match(data, @";id=([a-zA-Z0-9-]+);");
+                        string message_id = null;
+                        if (match_message_id.Success)
+                        {
+                            message_id = match_message_id.Groups[1].Value;
+                        }
+                        Match match_isMod = Regex.Match(data, @";mod=(\d+)");
+                        bool isMod = false;
+                        if (match_isMod.Success)
+                        {
+                            isMod = match_isMod.Groups[1].Value == "1";
+                        }
+                        ChannelMessage channel_message = new ChannelMessage(channel, username, message, message_id, isMod);
                         RunOnChannelMessageCallbacks(channel_message);
                     }
                 }
@@ -81,7 +93,7 @@ namespace MightyPecoBot
             /*
                 This parses that user joins the channel and fires onJoinChannel callbacks
              */
-            Actions.Add((string data) =>
+            MajorCallbacks.Add((string data) =>
             {
                 Match match = Regex.Match(data, @":(.+)!.+ JOIN #(.+)");
                 if (match.Success)
@@ -92,7 +104,7 @@ namespace MightyPecoBot
 
             });
 
-            Actions.Add((string data) =>
+            MajorCallbacks.Add((string data) =>
             {
                 Match match = Regex.Match(data, @":(.+)!.+ PART #(.+)");
                 if (match.Success)
@@ -202,13 +214,6 @@ namespace MightyPecoBot
 
         private void ReceiveData()
         {
-            /**
-                Need to add some kinds of composition
-                so instead of a big if statement,
-                it iterates over N expressions.
-                This way users can add code/logic without
-                messing with the if statements
-             */
             while (Running)
             {
                 string data = null;
@@ -220,7 +225,7 @@ namespace MightyPecoBot
 
                     */
                     BotLogger.LogDebug(data);
-                    foreach (var callback in Actions)
+                    foreach (var callback in MajorCallbacks)
                     {
                         callback(data);
                     }

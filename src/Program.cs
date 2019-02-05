@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using MightyPecoBot.Network;
+using MightyPecoBot.Parsing;
 using static MightyPecoBot.BotLogger;
 
 namespace MightyPecoBot
