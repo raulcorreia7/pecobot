@@ -64,25 +64,33 @@ public Program{
                 clientbot.SendToChannel(message.Channel, "Hello this is your custom message!");
                 return CallbackAction.CONTINUE;
             });
+            //Add an action after someone joins in.
             clientbot.OnJoinChannel((UserActionUponChannel information) =>
             {
                 clientbot.SendToChannel(information.Channel, "Hello " + information.Username + "!");
                 return CallbackAction.CONTINUE;
             });
+
+            //Add an action after someone leaves.
             clientbot.OnLeaveChannel((UserActionUponChannel information) =>
             {
                 clientbot.SendToChannel(information.Channel, "Byebye " + information.Username);
                 return CallbackAction.CONTINUE;
             });
+            //Add an action when someone raids your channel
             clientbot.OnRaidingEvent((RaidingEvent raidingevent) =>
             {
                 clientbot.SendToChannel(raidingevent.RaidedChannel, "HELP! Were are being raided by: " + raidingevent.RaiderChannel);
                 return CallbackAction.SKIP_OTHERS;
             });
+
+            //Add an action when someone sub gifts someone
             clientbot.OnSubGift((GiftEvent g)=>{
                 clientbot.SendToChannel(clientbot.DefaultChannel,g.Message);
                 return CallbackAction.CONTINUE;
             });
+
+            //Add an action when somone subscribed
             clientbot.OnSubscribe((SubscriptionEvent subevent)=>{
                 clientbot.SendToChannel(subevent.Channel,"WHOWHO! " + subevent.Username + " subscribed for: " + subevent.CommulativeMonths + " months.");
                 return CallbackAction.SKIP_OTHERS;
