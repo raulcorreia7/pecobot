@@ -7,4 +7,9 @@ namespace MightyPecoBot.Callbacks
         SKIP_OTHERS
 
     };
+
+    public class CallbackHandler
+    {
+        
+    }
 }
