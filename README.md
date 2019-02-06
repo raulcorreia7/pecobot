@@ -107,6 +107,7 @@ class Program{
     If you use CallbackAction.SKIP_OTHERS, no more callbacks will be called for the same type of event.
 ## Classes used
 ![Class Diagram](classdiagram.png)
+The class diagram is very condensed, there are many more functions implemented ready to use.
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
