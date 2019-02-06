@@ -4,9 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using MightyPecoBot.Callbacks;
-using MightyPecoBot.Network;
 using MightyPecoBot.Parsing;
-using static MightyPecoBot.BotLogger;
 
 namespace MightyPecoBot
 {
@@ -27,7 +25,7 @@ namespace MightyPecoBot
             /*
                 Select what log level you want
              */
-            BotLogger.LogLevel = LOG_LEVEL.DEBUG;
+            //BotLogger.LogLevel = LOG_LEVEL.DEBUG;
             /*
                 You need to provide your own token
              */
