@@ -260,7 +260,7 @@ namespace MightyPecoBot
              */
             CallbackHandler.AddToChannelMessageCallback((ChannelMessageEvent channelMessage) =>
             {
-                if (channelMessage.Message.Contains(IRCSymbols.CustomChannelCommands.GITHUB))
+                if (channelMessage.Message.ToLower().Contains(IRCSymbols.CustomChannelCommands.GITHUB))
                 {
                     SendToChannel(channel: channelMessage.Channel, message: GITHUB_URL);
                     return CallbackAction.SKIP_OTHERS;
