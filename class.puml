@@ -1,34 +1,139 @@
-@startuml
+@startuml MightyPecoBot
 
 class TwitchBot {
-+ Username : string
-+ Channel : string
-+ Socket : IClientSocket
-+ Running : bool
-  
-+TwitchBot(username,channel)
-+Connect(oauth)
-+Disconnect()
-+SendToIRC(message)
-+SendToChannel(channel,message)
-+OnChannelMessage(callback):CallbackAction
-+OnJoinChannel(callback):Callback
-+OnLeaveChannel(callback):Callback
+    + Username : string
+    + Channel : string
+    + Socket : IClientSocket
+    + Running : bool
+    +TwitchBot(username,channel)
+    +Connect(oauth)
+    +Disconnect()
+    +SendToIRC(message)
+    +SendToChannel(channel,message)
+    +OnChannelMessage(callback):CallbackAction
+    +OnJoinChannel(callback):Callback
+    +OnLeaveChannel(callback):Callback
 }
 
 interface IClientSocket {
-Connect():void
-IsConnected():bool
-Send(message):void
-Receive():string
+    Connect():void
+    IsConnected():bool
+    Send(message):void
+    Receive():string
 }
 
 class TCPClientSocket extends IClientSocket {
-Connect():void
-IsConnected():bool
-Send(message):void
-Receive():string
+    Connect():void
+    IsConnected():bool
+    Send(message):void
+    Receive():string
 }
 
+class CallbackHandler {
+    +CallbackHandler()
+    +AddToplevelCallback(callback)
+    +AddToChannelMessageCallback(callback)
+    +AddToJoinedChannelCallback(callback)
+    +AddToLeaveChannelCallback(callback)
+    +AddToSubscriptionCallback(callback)
+    +AddToSubGiftCallback(callback)
+    +AddToRaidingEventCallback(callback)
+    +AddToRitualEventCallback(callback)
+    +AddToBitsEventCallback(callback)
+    +RunCallbacks(data:string)
+    +RunOnChannelMessageCallbacks(msg:ChannelMessage)
+    +RunOnJoinedChannelCallback(information:UserActionUponChannel)
+    +RunOnLeaveChannelCallback(information:UserActionUponChannel)
+    +RunOnSubscribeCallback(subEvent:SubscriptionEvent)
+    +RunOnSubGiftCallback(gift:GiftEvent)
+    +RunOnRaidingCallbacks(raidingevent:RaidingEvent)
+    +RunOnRitualEvent(ritualevent:RitualEvent)
+    +RunOnBitsEvent(bitsevent:BitsEvent)
+
+}
+class ChannelMessageEvent {
+    +Channel:string
+    +Username:string
+    +Message:string
+    +MessageID:string
+    +Badge:string
+    +BadgeVersion:int
+
+    +IsAdmin():bool
+    +isBroadcaster():bool
+    +IsGlobalMod():bool
+    +IsModerator():bool
+    +IsSubscriber():bool
+    +IsStaff():bool
+}
+
+class BitsEvent {
+    +Badge:string
+    +Version:string
+    +NumberOfBits:int
+    +Username:string
+    +Channel:string
+    +Message:string
+}
+
+class UserActionUponChannel{
+    +Channel:string
+    +Username:string
+}
+
+class SubscriptionEvent{
+    +Badge:string
+    +Version:string
+    +Username:string
+    +Subtype:string
+    +CommulativeMonths:int
+    +ConsecutiveMonths:int
+    +Subplan:string
+    +Channel:string
+    +Message:string
+}
+
+class GiftEvent{
+    +Badge:string
+    +Version:string
+    +Gifter:string
+    +TypeOfGift:string
+    +TotalMonthsSubscribed:int
+    +Recipient:string
+    +Message:string
+}
+
+class RaidingEvent{
+    +Badge:string
+    +Version:string
+    +RaiderChannel:string
+    +NumberOfViewers:int
+    +Message:string
+    +RaidedChannel:string
+}
+
+class RitualEvent{
+    +Username:string
+    +Ritual:string
+    +TypeOfRitual:string
+    +EventMessage:string
+    +Channel:string
+    +UserMessage:string
+}
 TwitchBot *-- IClientSocket
+TwitchBot *-- CallbackHandler
+TwitchBot ..> ChannelMessageEvent
+CallbackHandler ..> ChannelMessageEvent
+TwitchBot ..> BitsEvent
+CallbackHandler ..> BitsEvent
+TwitchBot ..> UserActionUponChannel
+CallbackHandler ..> UserActionUponChannel
+TwitchBot ..> SubscriptionEvent
+CallbackHandler ..> SubscriptionEvent
+TwitchBot ..> GiftEvent
+CallbackHandler ..> GiftEvent
+TwitchBot ..> RaidingEvent
+CallbackHandler ..> RaidingEvent
+TwitchBot ..> RitualEvent
+CallbackHandler ..> RitualEvent
 @enduml

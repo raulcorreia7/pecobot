@@ -9,8 +9,8 @@ Pecobot:
     ✔ OnMessageChannel @done(19-02-06 09:47)
     ☐ ??
     Parse Events:
-      ☐ Subscribe
-      ☐ Bits
+      ✔ Subscribe @done(19-02-06 17:16)
+      ✔ Bits @done(19-02-06 17:16)
         Need to add parsing bits
       ☐ Follow
       ☐ Donate
@@ -20,13 +20,13 @@ Pecobot:
     ✔ Respond to PONG requests @done(19-02-06 05:16)
     ☐ UML
     ☐ Need to Handle Exceptions
-    ☐ Better Logging messages
-    ☐ Twitch Commands https://dev.twitch.tv/docs/irc/guide/
+    ✔ Better Logging messages @done(19-02-06 17:15)
+    ✔ Twitch Commands https://dev.twitch.tv/docs/irc/guide/ @done(19-02-06 17:15)
       ✔ Emote only @done(19-02-02 19:05)
     ✔ Parse Unknown commands @done(19-02-06 09:46)
     ☐ Throttle message rate
     ☐ Parse multiple badges
-    ☐ Move that big pile of callback logic to a class of its own
+    ✔ Move that big pile of callback logic to a class of its own @done(19-02-06 17:15)
     
   Study topics from chat:
   ☐ vicjay79: FluentAPI , 2nd iteration, https://scottlilly.com/how-to-create-a-fluent-interface-in-c/
