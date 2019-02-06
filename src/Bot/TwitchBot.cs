@@ -27,10 +27,13 @@ namespace MightyPecoBot
 
         private Timer Timer_memory;
 
-        List<Func<string, CallbackAction>> NormalCallbacks = new List<Func<string, CallbackAction>>();
-        List<Func<ChannelMessage, CallbackAction>> Callbacks_ChannelMessage = new List<Func<ChannelMessage, CallbackAction>>();
-        List<Func<UserActionUponChannel, CallbackAction>> Callbacks_JoinedChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
-        List<Func<UserActionUponChannel, CallbackAction>> Callbacks_LeaveChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
+        private List<Func<string, CallbackAction>> NormalCallbacks = new List<Func<string, CallbackAction>>();
+        private List<Func<ChannelMessage, CallbackAction>> Callbacks_ChannelMessage = new List<Func<ChannelMessage, CallbackAction>>();
+        private List<Func<UserActionUponChannel, CallbackAction>> Callbacks_JoinedChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
+        private List<Func<UserActionUponChannel, CallbackAction>> Callbacks_LeaveChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
+        private List<Func<SubscriptionEvent, CallbackAction>> Callbacks_Subscrition = new List<Func<SubscriptionEvent, CallbackAction>>();
+        private List<Func<GiftEvent, CallbackAction>> Callbacks_SubGift = new List<Func<GiftEvent, CallbackAction>>();
+        private List<Func<RaidingEvent, CallbackAction>> Callbacks_RaidingEvent = new List<Func<RaidingEvent, CallbackAction>>();
         public TwitchBot(string username, string channel)
         {
             Username = username;
@@ -43,7 +46,6 @@ namespace MightyPecoBot
         ~TwitchBot()
         {
             CleanUp();
-
         }
 
         private void DefaultActions()
@@ -53,7 +55,7 @@ namespace MightyPecoBot
              */
             NormalCallbacks.Add((string data) =>
             {
-                if (Regex.Match(data, IRCSymbols.PING).Success)
+                if (Regex.Match(data, IRCSymbols.Keywords.PING).Success)
                 {
                     sendPONG();
                 }
@@ -66,7 +68,7 @@ namespace MightyPecoBot
             {
                 //If PRIVMSG, fire onMessageEvent
                 //Optimize this to just one regular expression
-                if (Regex.Match(data, IRCSymbols.PRIVMSG).Success)
+                if (Regex.Match(data, IRCSymbols.Keywords.PRIVMSG).Success)
                 {
                     Match match = Regex.Match(data, @":(\w+)!.+#(\w+) :(.+)$");
                     if (match.Success)
@@ -140,6 +142,73 @@ namespace MightyPecoBot
                 return CallbackAction.SKIP_OTHERS;
             });
 
+            /* Usernotice */
+            NormalCallbacks.Add((string data) =>
+            {
+
+                //If it matches a sub/resub
+                Match match = Regex.Match(data, @"@badges=(\w+/\d+).+;display-name=([a-zA-Z0-9]+).+;msg-id=(resub|sub);msg-param-cumulative-months=(\d+);msg-param-streak-months=(\d+);.+;msg-param-sub-plan=([a-zA-Z0-9]+).+USERNOTICE\s#(\w+)\s:(.+)");
+                if (match.Success)
+                {
+                    var badge_version = match.Groups[1].Value.Split('/');
+                    string badge = badge_version[0];
+                    string version = badge_version[1];
+                    string username = match.Groups[2].Value;
+                    string subtype = match.Groups[3].Value;
+                    int commulative_months = Int32.Parse(match.Groups[3].Value);
+                    int consecutive_months = Int32.Parse(match.Groups[4].Value);
+                    string subplan = match.Groups[6].Value;
+                    string channel = match.Groups[7].Value;
+                    string message = match.Groups[8].Value;
+
+                    SubscriptionEvent subs_event = new SubscriptionEvent
+                                                (badge, version, username,
+                                                subtype, commulative_months, consecutive_months,
+                                                subplan, channel, message);
+                    RunOnSubscribeCallback(subs_event);
+                    return CallbackAction.SKIP_OTHERS;
+                }
+                return CallbackAction.CONTINUE;
+            });
+
+            NormalCallbacks.Add((string data) =>
+            {
+                Match match = Regex.Match(data, @"@badges=(\w+/\d+).+;display-name=([a-zA-Z0-9]+).+;msg-id=(\w+);msg-param-months=(\d+);msg-param-recipient-display-name=([a-zA-Z0-9_]+);.+msg-param-sub-plan=([a-bA-Z0-9]+);");
+                if (match.Success)
+                {
+                    var badge_version = IRCSymbols.ParseBadge(match.Groups[1].Value);
+                    string gifter = match.Groups[2].Value;
+                    string typeOfGift = match.Groups[3].Value;
+                    int total_months = Int32.Parse(match.Groups[4].Value);
+                    string recipient = match.Groups[5].Value;
+                    string subplan = match.Groups[6].Value;
+                    string message = match.Groups[7].Value;
+                    GiftEvent giftevent = new GiftEvent(badge_version.badge, badge_version.version, gifter, typeOfGift, total_months, subplan, recipient, message);
+                    RunOnSubGiftCallback(giftevent);
+                    return CallbackAction.SKIP_OTHERS;
+                }
+                return CallbackAction.CONTINUE;
+            });
+
+            NormalCallbacks.Add((string data) =>
+            {
+
+                Match match = Regex.Match(data, @"@badges=([a-zA-Z0-9]+/\d+);.+login=([a-zA-Z0-9]+);.+;msg-param-viewerCount=(\d+).+;system-msg=(.+)\sUSERNOTICE\s#(.+)");
+                if (match.Success)
+                {
+                    var tuple = IRCSymbols.ParseBadge(match.Groups[1].Value);
+                    var raiderchannel = match.Groups[2].Value;
+                    var viewers = Int32.Parse(match.Groups[3].Value);
+                    var message = match.Groups[4].Value;
+                    var raidedchannel = match.Groups[5].Value;
+                    RaidingEvent raiding_event = new RaidingEvent(tuple.badge, tuple.version, raiderchannel, viewers, message, raidedchannel);
+                    RunOnRaidingCallbacks(raiding_event);
+                    return CallbackAction.SKIP_OTHERS;
+                }
+
+                return CallbackAction.CONTINUE;
+            });
+
             /*
                 Callback if user sends !github command, it responds back with github url
              */
@@ -152,10 +221,19 @@ namespace MightyPecoBot
                 }
                 return CallbackAction.CONTINUE;
             });
+
+            Callbacks_Subscrition.Add(
+                (SubscriptionEvent subscription) =>
+            {
+                SendToChannel(subscription.Channel, "Thanks for the (re)subscription!");
+                return CallbackAction.SKIP_OTHERS;
+            });
         }
+
+
         /**
-        
-         */
+            This methods cleanups the the running thread for the receiving socket
+        */
         private void CleanUp()
         {
             BotLogger.LogDebug("Cleaning up the bot!");
@@ -301,6 +379,34 @@ namespace MightyPecoBot
                 if (callback(information) == CallbackAction.SKIP_OTHERS)
                     break;
         }
+
+        private void RunOnSubscribeCallback(SubscriptionEvent subEvent)
+        {
+            var re_subscribed = (subEvent.Subtype == "sub") ? "subscribed" : "resubscribed";
+            BotLogger.LogMessage($"{subEvent.Username} {re_subscribed} the channel: #{subEvent.Channel}");
+            foreach (var callback in this.Callbacks_Subscrition)
+                if (callback(subEvent) == CallbackAction.SKIP_OTHERS)
+                    break;
+        }
+
+
+        private void RunOnSubGiftCallback(GiftEvent giftevent)
+        {
+            BotLogger.LogMessage(giftevent.Message);
+            foreach (var callback in this.Callbacks_SubGift)
+                if (callback(giftevent) == CallbackAction.SKIP_OTHERS)
+                    break;
+        }
+
+
+        private void RunOnRaidingCallbacks(RaidingEvent raidingEvent)
+        {
+            BotLogger.LogMessage(raidingEvent.Message);
+            foreach (var callback in this.Callbacks_RaidingEvent)
+                if (callback(raidingEvent) == CallbackAction.SKIP_OTHERS)
+                    break;
+        }
+
         public void OnChannelMessage(Func<ChannelMessage, CallbackAction> callback)
         {
             this.Callbacks_ChannelMessage.Add(callback);
@@ -314,6 +420,22 @@ namespace MightyPecoBot
         public void OnLeaveChannel(Func<UserActionUponChannel, CallbackAction> callback)
         {
             this.Callbacks_LeaveChannel.Add(callback);
+        }
+
+        public void OnSubscribe(Func<SubscriptionEvent, CallbackAction> callback)
+        {
+            this.Callbacks_Subscrition.Add(callback);
+        }
+
+        public void OnSubGift(Func<GiftEvent, CallbackAction> callback)
+        {
+            this.Callbacks_SubGift.Add(callback);
+        }
+
+        public void OnRaidingEvent(Func<RaidingEvent, CallbackAction> callback)
+        {
+
+            this.Callbacks_RaidingEvent.Add(callback);
         }
 
         //FIXME: need to fix all of this to receive a channel
@@ -384,7 +506,6 @@ namespace MightyPecoBot
             Running = false;
             SendToChannel(IRCSymbols.Commands.DISCONNECT);
             CleanUp();
-
         }
 
         /**

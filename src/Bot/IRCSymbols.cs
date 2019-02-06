@@ -105,15 +105,21 @@ namespace MightyPecoBot
             public const string GITHUB = "!github";
 
         }
-        public const string PRIVMSG = "PRIVMSG";
-        public const string NICK = "NICK";
-        public const string JOIN = "JOIN";
 
-        public const string PASS = "PASS";
+        public static class Keywords
+        {
+            public const string PRIVMSG = "PRIVMSG";
+            public const string NICK = "NICK";
+            public const string JOIN = "JOIN";
 
-        public const string PING = "PING";
+            public const string PASS = "PASS";
 
-        public const string PART = "PART";
+            public const string PING = "PING";
+
+            public const string PART = "PART";
+
+            public const string USERNOTICE = "USERNOTICE";
+        }
 
         public static string FormatTwoParameters(string p1, string p2)
         {
@@ -121,24 +127,30 @@ namespace MightyPecoBot
         }
         public static string FormatOAuth(string oauth)
         {
-            return FormatTwoParameters(PASS, oauth);
+            return FormatTwoParameters(Keywords.PASS, oauth);
         }
 
         public static string FormatUsername(string username)
         {
-            return FormatTwoParameters(NICK, username);
+            return FormatTwoParameters(Keywords.NICK, username);
         }
 
         public static string FormatJoin(string channel)
         {
-            return JOIN + " #" + channel;
+            return Keywords.JOIN + " #" + channel;
         }
 
         public static string FormatChannelMessage(string channel, string message)
         {
-            return PRIVMSG + " #" + channel + " :" + message;
+            return Keywords.PRIVMSG + " #" + channel + " :" + message;
         }
 
+        public static (string badge, string version) ParseBadge(string badge_version)
+        {
+            string[] badge_version_array = badge_version.Split('/');
+            var tuple = (badge: badge_version_array[0], version: badge_version[1] + "");
+            return tuple;
+        }
 
     }
 }

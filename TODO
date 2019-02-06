@@ -11,6 +11,7 @@ Pecobot:
     Parse Events:
       ☐ Subscribe
       ☐ Bits
+        Need to add parsing bits
       ☐ Follow
       ☐ Donate
   ✔ Reimplement a way to see console output @done(19-02-02 16:36)
@@ -24,6 +25,7 @@ Pecobot:
       ✔ Emote only @done(19-02-02 19:05)
     ✔ Parse Unknown commands @done(19-02-06 09:46)
     ☐ Throttle message rate
+    ☐ Parse multiple badges
 
     
   Study topics from chat:
