@@ -58,6 +58,8 @@ public Program{
         TwitchBot clientbot = new TwitchBot(USERNAME, CHANNEL);
         //Connect
         clientbot.Connect(YOUR_OWN_OAUTH_TOKEN);
+
+            //Add an action after someone says something
         clientbot.OnChannelMessage((ChannelMessageEvent message) =>
             {   
                 //You either use your default channel or the message responses channel
