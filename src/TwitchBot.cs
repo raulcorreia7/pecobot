@@ -23,7 +23,9 @@ namespace MightyPecoBot
 
         public volatile bool Running = false;
 
-        public Thread ReceivingThread;
+        private Thread ReceivingThread;
+
+        private Timer Timer_memory;
 
         List<Func<string, CallbackAction>> NormalCallbacks = new List<Func<string, CallbackAction>>();
 
@@ -184,6 +186,19 @@ namespace MightyPecoBot
         {
             BotLogger.LogDebug("[ >>Sending HelloWorld! ]");
             SendToIRC(IRCSymbols.FormatChannelMessage(Channel, "HelloWorld!"));
+            initTimer();
+        }
+
+        private void initTimer()
+        {
+            Timer_memory = new Timer((e) =>
+            {
+                long bytes = GC.GetTotalMemory(false);
+                double megabytes = Math.Round(bytes * 1E-6, 3);
+                BotLogger.LogDebug($"Memory usage is : {megabytes}MB");
+
+            }, null, 1000, 60 * 1000);
+
         }
 
         private void sendPONG()
@@ -290,7 +305,7 @@ namespace MightyPecoBot
             this.Callbacks_LeaveChannel.Add(callback);
         }
 
-
+        //FIXME: need to fix all of this to receive a channel
         /*
             Twitch commands implementation
          */
@@ -422,20 +437,72 @@ namespace MightyPecoBot
 
         public void SendMOD(string username)
         {
-            SendToChannel(username);
+            SendToChannel($"{IRCSymbols.Commands.PROMOTE_TO_MOD}, {username}");
         }
 
         public void SendUnmod(string username)
         {
-            SendToChannel(username);
+            SendToChannel($"{IRCSymbols.Commands.UNMOD}, {username}");
         }
 
-        public void ListMods(string username)
+        public void ListMods()
         {
             //TODO: Parse message to list moderators
-            SendToChannel(username);
+            SendToChannel(IRCSymbols.Commands.LIST_MODS);
         }
 
-        
+        public void SendSetR9KMode(bool isR9KMode)
+        {
+            if (isR9KMode)
+                SendToChannel(IRCSymbols.Commands.R9KBETA_ON);
+            else
+                SendToChannel(IRCSymbols.Commands.R9KBETA_OFF);
+        }
+
+        public void SendRaidChannel(string channel)
+        {
+            SendToChannel($"{IRCSymbols.Commands.RAID} {channel}");
+        }
+
+        public void SendUnRaid()
+        {
+            SendToChannel($"{IRCSymbols.Commands.UNRAID}");
+        }
+
+        public void SendSetSlowChannel(bool isSlow)
+        {
+            if (isSlow)
+                SendToChannel(IRCSymbols.Commands.SLOW_ON);
+            else
+                SendToChannel(IRCSymbols.Commands.SLOW_OFF);
+        }
+
+        public void SendSubsOnly(bool isSubsOnly)
+        {
+            if (isSubsOnly)
+                SendToChannel(IRCSymbols.Commands.SUBSCRIBERS_ONLY);
+            else
+                SendToChannel(IRCSymbols.Commands.SUBSCRIBERS_OFF);
+        }
+
+        /**
+        "/timeout <username> [duration][time unit] [reason]" - 
+        Temporarily prevent a user from chatting.
+        Duration (optional, default=10 minutes) must be a positive integer;
+        time unit (optional, default=s) must be one of s, m, h, d, w;
+        maximum duration is 2 weeks. 
+        Combinations like 1d2h are also allowed. 
+        Reason is optional and will be shown to the target user and other moderators.
+        Use "untimeout" to remove a timeout.
+         */
+        public void SendTimeout(string username, int duration, string time_unit, string reason)
+        {
+            SendToChannel($"{IRCSymbols.Commands.TIMEOUT} {username} {duration} {time_unit} {reason}");
+        }
+
+        public void SendRemoveTimeout(string username)
+        {
+            SendToChannel($"{IRCSymbols.Commands.UNTIMEOUT} {username}");
+        }
     }
 }

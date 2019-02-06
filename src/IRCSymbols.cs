@@ -60,7 +60,7 @@ namespace MightyPecoBot
 
             public const string UNMOD = "/unmod";
 
-            public const string MODS = "/mods";
+            public const string LIST_MODS = "/mods";
 
             public const string R9KBETA_ON = "/r9kbeta";
 
