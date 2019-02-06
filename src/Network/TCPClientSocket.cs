@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
 
 namespace MightyPecoBot.Network
@@ -12,26 +13,29 @@ namespace MightyPecoBot.Network
     class TCPClientSocket : IClientSocket
     {
         public TcpClient Socket;
-        public NetworkStream NetworkStream;
         public StreamReader StreamReader;
         public StreamWriter StreamWriter;
+
+        public Stream Stream;
 
         public string URL { get; }
         public int PORT { get; }
 
-        public TCPClientSocket(string url, int port)
+        public bool IsEncrypted;
+
+        public TCPClientSocket(string url, int port, bool encrypted)
         {
             Socket = new TcpClient();
             this.URL = url;
             this.PORT = port;
+            this.IsEncrypted = encrypted;
         }
 
         ~TCPClientSocket()
         {
-            if (NetworkStream == null || StreamReader == null || StreamWriter == null) return;
+            if (Socket == null || Stream == null || StreamReader == null || StreamWriter == null) return;
             StreamWriter.Close();
             StreamReader.Close();
-            NetworkStream.Close();
             Socket.Close();
         }
 
@@ -40,9 +44,18 @@ namespace MightyPecoBot.Network
             if (!Socket.Connected)
             {
                 Socket.Connect(URL, PORT);
-                NetworkStream = Socket.GetStream();
-                StreamReader = new StreamReader(NetworkStream);
-                StreamWriter = new StreamWriter(NetworkStream);
+                if (IsEncrypted)
+                {
+                    SslStream st = new SslStream(Socket.GetStream());
+                    st.AuthenticateAsClient(URL);
+                    Stream = st;
+                }
+                else
+                {
+                    Stream = Socket.GetStream();
+                }
+                StreamReader = new StreamReader(Stream);
+                StreamWriter = new StreamWriter(Stream);
             }
         }
 

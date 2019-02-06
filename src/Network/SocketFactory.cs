@@ -20,9 +20,9 @@ namespace MightyPecoBot.Network
             switch (connection)
             {
                 case ConnectionType.TCP_UNENCRYPTED:
-                    return new TCPClientSocket(TCP_URL, PORT_TCP);
+                    return new TCPClientSocket(TCP_URL, PORT_TCP, false);
                 case ConnectionType.TCP_SSL:
-                    return new TCPSSLClientSocket(TCP_URL, PORT_TCP_SSL);
+                    return new TCPClientSocket(TCP_URL, PORT_TCP_SSL, true);
                 default:
                     throw new ArgumentException();
 
