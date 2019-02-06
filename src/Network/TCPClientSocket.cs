@@ -20,10 +20,7 @@ namespace MightyPecoBot.Network
 
         public TCPClientSocket(string url, int port)
         {
-            Socket = new TcpClient(url, port);
-            NetworkStream = Socket.GetStream();
-            StreamReader = new StreamReader(NetworkStream);
-            StreamWriter = new StreamWriter(NetworkStream);
+            Socket = new TcpClient();
             this.URL = url;
             this.PORT = port;
         }
@@ -41,12 +38,15 @@ namespace MightyPecoBot.Network
             if (!Socket.Connected)
             {
                 Socket.Connect(URL, PORT);
+                NetworkStream = Socket.GetStream();
+                StreamReader = new StreamReader(NetworkStream);
+                StreamWriter = new StreamWriter(NetworkStream);
             }
         }
 
         public bool IsConnected() => Socket.Connected;
         public string Receive()
-        {   
+        {
             //This has an exception, we need to treat it
             return StreamReader.ReadLine();
         }
