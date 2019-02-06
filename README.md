@@ -1,10 +1,10 @@
 # MightyPecoBot
 MightyPecoBot is a TwitchBot implemented from scratch.  
-It uses dotnet core 2.0
+It uses dotnet core 2.1
 
 ## Installation
 
-Clone the repository and copy the classes to your .Net Project
+Clone the repository and copy the classes to your .net Project
 ```bash
 git clone https://github.com/raulcorreia7/pecobot
 ```
