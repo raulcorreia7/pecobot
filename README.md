@@ -64,38 +64,38 @@ public Program{
             {   
                 //You either use your default channel or the message responses channel
                 clientbot.SendToChannel(message.Channel, "Hello this is your custom message!");
-                return CallbackAction.CONTINUE;
+                return CallbackAction.CONTINUE;//Continue with all other actions queued onChannelMessage
             });
             //Add an action after someone joins in.
             clientbot.OnJoinChannel((UserActionUponChannel information) =>
             {
                 clientbot.SendToChannel(information.Channel, "Hello " + information.Username + "!");
-                return CallbackAction.CONTINUE;
+                return CallbackAction.CONTINUE;//Continue with all other actions queued onChannelMessage
             });
 
             //Add an action after someone leaves.
             clientbot.OnLeaveChannel((UserActionUponChannel information) =>
             {
                 clientbot.SendToChannel(information.Channel, "Byebye " + information.Username);
-                return CallbackAction.CONTINUE;
+                return CallbackAction.CONTINUE;//Continue with all other actions queued onChannelMessage
             });
             //Add an action when someone raids your channel
             clientbot.OnRaidingEvent((RaidingEvent raidingevent) =>
             {
                 clientbot.SendToChannel(raidingevent.RaidedChannel, "HELP! Were are being raided by: " + raidingevent.RaiderChannel);
-                return CallbackAction.SKIP_OTHERS;
+                return CallbackAction.SKIP_OTHERS;//Don't do anything more actions queued up
             });
 
             //Add an action when someone sub gifts someone
             clientbot.OnSubGift((GiftEvent g)=>{
                 clientbot.SendToChannel(clientbot.DefaultChannel,g.Message);
-                return CallbackAction.CONTINUE;
+                return CallbackAction.CONTINUE;//Continue with all other actions queued onChannelMessage
             });
 
             //Add an action when somone subscribed
             clientbot.OnSubscribe((SubscriptionEvent subevent)=>{
                 clientbot.SendToChannel(subevent.Channel,"WHOWHO! " + subevent.Username + " subscribed for: " + subevent.CommulativeMonths + " months.");
-                return CallbackAction.SKIP_OTHERS;
+                return CallbackAction.SKIP_OTHERS;//Don't do anything more actions queued up
             });
 
     }
