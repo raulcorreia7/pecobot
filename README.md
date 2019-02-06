@@ -52,7 +52,7 @@ class Program
 ```csharp
 using MightyPecoBot.Callbacks;
 using MightyPecoBot.Parsing;
-public Program{
+class Program{
     static void Main(string[] args)
     {
         TwitchBot clientbot = new TwitchBot(USERNAME, CHANNEL);
