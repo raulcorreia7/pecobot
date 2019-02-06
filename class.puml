@@ -1,0 +1,34 @@
+@startuml
+
+class TwitchBot {
++ Username : string
++ Channel : string
++ Socket : IClientSocket
++ Running : bool
+  
++TwitchBot(username,channel)
++Connect(oauth)
++Disconnect()
++SendToIRC(message)
++SendToChannel(channel,message)
++OnChannelMessage(callback):CallbackAction
++OnJoinChannel(callback):Callback
++OnLeaveChannel(callback):Callback
+}
+
+interface IClientSocket {
+Connect():void
+IsConnected():bool
+Send(message):void
+Receive():string
+}
+
+class TCPClientSocket extends IClientSocket {
+Connect():void
+IsConnected():bool
+Send(message):void
+Receive():string
+}
+
+TwitchBot *-- IClientSocket
+@enduml

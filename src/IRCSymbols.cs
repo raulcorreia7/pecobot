@@ -1,10 +1,10 @@
 
 namespace MightyPecoBot
 {
-    public class IRCSymbols
+    public static class IRCSymbols
     {
 
-        public class Colors
+        public static class Colors
         {
 
             public const string BLUE = "Blue";
@@ -24,9 +24,8 @@ namespace MightyPecoBot
             public const string YELLOWGREEN = "YellowGreen";
         }
 
-        public class Commands
+        public static class Commands
         {
-
             public const string BAN = "/ban";
             public const string UNBAN = "/unban";
 
@@ -89,12 +88,19 @@ namespace MightyPecoBot
             public const string VIPS = "/vips";
 
             public const string WHISPER = "/w";
-
-
-
         }
 
-        public class CustomChannelCommands
+        public static class Badges
+        {
+            public static string ADMIN = "admin";
+            public static string BROADCASTER = "broadcaster";
+            public static string GLOBAL_MOD = "global_mod";
+            public static string MODERATOR = "moderator";
+            public static string SUBSCRIBER = "subscriber";
+            public static string STAFF = "staff";
+        }
+
+        public static class CustomChannelCommands
         {
             public const string GITHUB = "!github";
 

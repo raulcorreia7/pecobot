@@ -1,3 +1,0 @@
-[TwitchBot]++->[<<IClientSocket>>]
-[TwitchBot]->[BotLogger]
-[<<IClientSocket>>]^-.-[TCPClientSocket]

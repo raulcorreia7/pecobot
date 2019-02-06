@@ -17,7 +17,7 @@ namespace MightyPecoBot
         //FIXME: Be aware of port, may change with SSL and Websockets
         public const int PORT = 6667;
         public string Username { get; }
-        public string Channel { get; }
+        public string DefaultChannel { get; }
 
         public IClientSocket Socket;
 
@@ -28,14 +28,13 @@ namespace MightyPecoBot
         private Timer Timer_memory;
 
         List<Func<string, CallbackAction>> NormalCallbacks = new List<Func<string, CallbackAction>>();
-
         List<Func<ChannelMessage, CallbackAction>> Callbacks_ChannelMessage = new List<Func<ChannelMessage, CallbackAction>>();
         List<Func<UserActionUponChannel, CallbackAction>> Callbacks_JoinedChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
         List<Func<UserActionUponChannel, CallbackAction>> Callbacks_LeaveChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
         public TwitchBot(string username, string channel)
         {
             Username = username;
-            Channel = channel;
+            DefaultChannel = channel;
             Socket = new TCPClientSocket(URL, PORT);
             ReceivingThread = new Thread(ReceiveData);
             DefaultActions();
@@ -75,25 +74,36 @@ namespace MightyPecoBot
                         string username = match.Groups[1].Value;
                         string channel = match.Groups[2].Value;
                         string message = match.Groups[3].Value;
+                        string badge = String.Empty;
+                        int version = -1;
                         Match match_message_id = Regex.Match(data, @";id=([a-zA-Z0-9-]+);");
                         string message_id = null;
                         if (match_message_id.Success)
                         {
                             message_id = match_message_id.Groups[1].Value;
                         }
-                        Match match_isMod = Regex.Match(data, @";mod=(\d+)");
-                        bool isMod = false;
-                        if (match_isMod.Success)
+
+                        Match match_badge = Regex.Match(data, @"@badges=(\w+/\d+|);");
+                        if (match_badge.Success)
                         {
-                            isMod = match_isMod.Groups[1].Value == "1";
+
+                            badge = match_badge.Groups[1].Value;
+                            if (!String.IsNullOrEmpty(badge))
+                            {
+                                string[] parsed = badge.Split('/');
+                                badge = parsed[0];
+                                version = Int32.Parse(parsed[1]);
+                            }
                         }
-                        ChannelMessage channel_message = new ChannelMessage(channel, username, message, message_id, isMod);
+                        ChannelMessage channel_message = new ChannelMessage(channel, username, message, message_id, badge, version);
                         RunOnChannelMessageCallbacks(channel_message);
                     }
                 }
                 return CallbackAction.SKIP_OTHERS;
             });
-
+            /*
+                Callback that parses and triggers & logs bad error
+             */
             NormalCallbacks.Add((string data) =>
             {
                 if (Regex.Match(data, @":Unknown command").Success)
@@ -116,7 +126,9 @@ namespace MightyPecoBot
                 }
                 return CallbackAction.SKIP_OTHERS;
             });
-
+            /*
+                Callback to parse and trigger OnLeaveChannel event
+             */
             NormalCallbacks.Add((string data) =>
             {
                 Match match = Regex.Match(data, @":(.+)!.+ PART #(.+)");
@@ -128,17 +140,22 @@ namespace MightyPecoBot
                 return CallbackAction.SKIP_OTHERS;
             });
 
-
+            /*
+                Callback if user sends !github command, it responds back with github url
+             */
             Callbacks_ChannelMessage.Add((ChannelMessage channelMessage) =>
             {
                 if (channelMessage.Message.Contains(IRCSymbols.CustomChannelCommands.GITHUB))
                 {
                     SendToChannel(channel: channelMessage.Channel, message: GITHUB_URL);
+                    return CallbackAction.SKIP_OTHERS;
                 }
-                return CallbackAction.SKIP_OTHERS;
+                return CallbackAction.CONTINUE;
             });
         }
-
+        /**
+        
+         */
         private void CleanUp()
         {
             BotLogger.LogDebug("Cleaning up the bot!");
@@ -149,7 +166,6 @@ namespace MightyPecoBot
                 {
                     ReceivingThread.Abort();
                 }
-
             }
             catch (Exception e)
             {
@@ -163,10 +179,8 @@ namespace MightyPecoBot
                     {
                         BotLogger.LogDebug("Interrupted the exception!");
                     }
-
                 }
             }
-
             BotLogger.LogDebug("Thread terminated!");
 
         }
@@ -177,7 +191,7 @@ namespace MightyPecoBot
             Socket.Connect();
             SendOauth(oauth);
             SendToIRC(IRCSymbols.FormatUsername(Username));
-            SendToIRC(IRCSymbols.FormatJoin(Channel));
+            SendToIRC(IRCSymbols.FormatJoin(DefaultChannel));
             RequestTwitchMembershipStateEvents();
             this.Running = true;
             ReceivingThread.Start();
@@ -185,7 +199,7 @@ namespace MightyPecoBot
         public void Debug()
         {
             BotLogger.LogDebug("[ >>Sending HelloWorld! ]");
-            SendToIRC(IRCSymbols.FormatChannelMessage(Channel, "HelloWorld!"));
+            SendToIRC(IRCSymbols.FormatChannelMessage(DefaultChannel, "HelloWorld!"));
             initTimer();
         }
 
@@ -196,7 +210,6 @@ namespace MightyPecoBot
                 long bytes = GC.GetTotalMemory(false);
                 double megabytes = Math.Round(bytes * 1E-6, 3);
                 BotLogger.LogDebug($"Memory usage is : {megabytes}MB");
-
             }, null, 1000, 60 * 1000);
 
         }
@@ -217,12 +230,6 @@ namespace MightyPecoBot
             BotLogger.LogMessage(message);
             Socket.Send(message);
         }
-        public void SendToChannel(string message)
-        {
-            BotLogger.LogMessage(message);
-            string data = IRCSymbols.FormatChannelMessage(Channel, message);
-            Socket.Send(data);
-        }
 
         public void SendToChannel(string channel, string message)
         {
@@ -230,7 +237,12 @@ namespace MightyPecoBot
             string data = IRCSymbols.FormatChannelMessage(channel, message);
             Socket.Send(data);
         }
-
+        public void SendToChannel(string message)
+        {
+            BotLogger.LogMessage(message);
+            string data = IRCSymbols.FormatChannelMessage(DefaultChannel, message);
+            Socket.Send(data);
+        }
         private void RequestTwitchMembershipStateEvents()
         {
             BotLogger.LogDebug("Requesting Membership capabilities.");

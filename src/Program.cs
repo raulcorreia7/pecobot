@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using MightyPecoBot.Callbacks;
 using MightyPecoBot.Network;
 using MightyPecoBot.Parsing;
 using static MightyPecoBot.BotLogger;
@@ -35,11 +36,9 @@ namespace MightyPecoBot
             TwitchBot clientbot = new TwitchBot(USERNAME, CHANNEL);
             clientbot.Connect(OATH_TOKEN);
             clientbot.Debug();
-            Thread.Sleep(500);
 
             while (clientbot.Running)
             {
-                //Console.ReadKey();
                 string data = Console.ReadLine();
                 if (!string.IsNullOrEmpty(data))
                     clientbot.SendToIRC(data);

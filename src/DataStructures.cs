@@ -8,12 +8,11 @@ namespace MightyPecoBot.Parsing
         public string Channel;
         public string Username;
         public string Message;
-
         public string MessageID;
+        public string badge;
+        public int badge_version;
 
-        public bool Mod;
-
-        public ChannelMessage(string channel, string username, string message, string messageID, bool mod)
+        public ChannelMessage(string channel, string username, string message, string messageID, string badge, int badge_version)
         {
             this.Channel = channel;
             this.Username = username;
@@ -21,9 +20,25 @@ namespace MightyPecoBot.Parsing
             if (!string.IsNullOrEmpty(messageID))
                 this.MessageID = messageID;
             else
-                this.MessageID ="NotParsed";
-        this.Mod = mod;
+                this.MessageID = "NOMESSAGEID";
+
+            if (string.IsNullOrEmpty(badge))
+            {
+                this.badge = badge.ToLower(); ;
+                this.badge_version = badge_version;
+            }
+            else
+            {
+                this.badge = "NOBADGE";
+                this.badge_version = -1;
+            }
         }
+        public bool IsAdmin => this.badge == IRCSymbols.Badges.ADMIN;
+        public bool IsBroadcaster => this.badge == IRCSymbols.Badges.BROADCASTER;
+        public bool IsGlobalMod => this.badge == IRCSymbols.Badges.GLOBAL_MOD;
+        public bool IsModerator => this.badge == IRCSymbols.Badges.MODERATOR;
+        public bool IsSubscriber => this.badge == IRCSymbols.Badges.SUBSCRIBER;
+        public bool IsStaff => this.badge == IRCSymbols.Badges.STAFF;
     }
 
     public class UserActionUponChannel
