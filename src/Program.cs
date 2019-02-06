@@ -22,7 +22,6 @@ namespace MightyPecoBot
          */
         const string CHANNEL = "frosticecold";
 
-        static volatile bool running = true;
         static void Main(string[] args)
         {
             /*

@@ -119,6 +119,8 @@ namespace MightyPecoBot
             public const string PART = "PART";
 
             public const string USERNOTICE = "USERNOTICE";
+
+            public const string BITS = "bits";
         }
 
         public static string FormatTwoParameters(string p1, string p2)

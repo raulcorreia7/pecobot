@@ -26,14 +26,20 @@ namespace MightyPecoBot
         private Thread ReceivingThread;
 
         private Timer Timer_memory;
-
+        /*
+        
+            Need to hide all these callbacks
+         */
         private List<Func<string, CallbackAction>> NormalCallbacks = new List<Func<string, CallbackAction>>();
-        private List<Func<ChannelMessage, CallbackAction>> Callbacks_ChannelMessage = new List<Func<ChannelMessage, CallbackAction>>();
+        private List<Func<ChannelMessageEvent, CallbackAction>> Callbacks_ChannelMessage = new List<Func<ChannelMessageEvent, CallbackAction>>();
         private List<Func<UserActionUponChannel, CallbackAction>> Callbacks_JoinedChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
         private List<Func<UserActionUponChannel, CallbackAction>> Callbacks_LeaveChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
         private List<Func<SubscriptionEvent, CallbackAction>> Callbacks_Subscrition = new List<Func<SubscriptionEvent, CallbackAction>>();
         private List<Func<GiftEvent, CallbackAction>> Callbacks_SubGift = new List<Func<GiftEvent, CallbackAction>>();
         private List<Func<RaidingEvent, CallbackAction>> Callbacks_RaidingEvent = new List<Func<RaidingEvent, CallbackAction>>();
+        private List<Func<RitualEvent, CallbackAction>> Callbacks_RitualEvent = new List<Func<RitualEvent, CallbackAction>>();
+
+        private List<Func<BitsEvent, CallbackAction>> Callbacks_BitsEvent = new List<Func<BitsEvent, CallbackAction>>();
         public TwitchBot(string username, string channel)
         {
             Username = username;
@@ -66,10 +72,33 @@ namespace MightyPecoBot
              */
             NormalCallbacks.Add((string data) =>
             {
-                //If PRIVMSG, fire onMessageEvent
-                //Optimize this to just one regular expression
-                if (Regex.Match(data, IRCSymbols.Keywords.PRIVMSG).Success)
+                /* 
+                    There are two cases, 
+
+                    * one is a regular privmsg
+                    * second is privmsg with bits information
+
+                    */
+                if (data.Contains(IRCSymbols.Keywords.BITS))
                 {
+                    Match match = Regex.Match(data, @"@badges=([a-zA-Z]+/\d+).+;bits=(\d+).+:([a-zA-Z_0-9]+)!.+PRIVMSG\s#(\w+)\s:(.+)");
+                    if (match.Success)
+                    {
+                        var tuple = IRCSymbols.ParseBadge(match.Groups[1].Value);
+                        int bits = Int32.Parse(match.Groups[2].Value);
+                        string username = match.Groups[3].Value;
+                        string channel = match.Groups[4].Value;
+                        string message = match.Groups[5].Value;
+                        BitsEvent bitsEvent = new BitsEvent(tuple.badge, tuple.version, bits, username, channel, message);
+
+                        return CallbackAction.SKIP_OTHERS;
+                    }
+                }
+                else
+                if (data.Contains(IRCSymbols.Keywords.PRIVMSG))
+                {
+
+
                     Match match = Regex.Match(data, @":(\w+)!.+#(\w+) :(.+)$");
                     if (match.Success)
                     {
@@ -97,7 +126,7 @@ namespace MightyPecoBot
                                 version = Int32.Parse(parsed[1]);
                             }
                         }
-                        ChannelMessage channel_message = new ChannelMessage(channel, username, message, message_id, badge, version);
+                        ChannelMessageEvent channel_message = new ChannelMessageEvent(channel, username, message, message_id, badge, version);
                         RunOnChannelMessageCallbacks(channel_message);
                     }
                 }
@@ -170,7 +199,9 @@ namespace MightyPecoBot
                 }
                 return CallbackAction.CONTINUE;
             });
-
+            /*
+                Parses a gift event
+             */
             NormalCallbacks.Add((string data) =>
             {
                 Match match = Regex.Match(data, @"@badges=(\w+/\d+).+;display-name=([a-zA-Z0-9]+).+;msg-id=(\w+);msg-param-months=(\d+);msg-param-recipient-display-name=([a-zA-Z0-9_]+);.+msg-param-sub-plan=([a-bA-Z0-9]+);");
@@ -189,7 +220,9 @@ namespace MightyPecoBot
                 }
                 return CallbackAction.CONTINUE;
             });
-
+            /*
+            Parses a RaidingEvent
+             */
             NormalCallbacks.Add((string data) =>
             {
 
@@ -210,9 +243,31 @@ namespace MightyPecoBot
             });
 
             /*
+                Parses a RitualEvent
+             */
+
+            NormalCallbacks.Add((string data) =>
+            {
+                Match match = Regex.Match(data, @"display-name=([a-zA-Z_0-9]+).+;login=([a-zA-Z_0-9]+).+;msg-id=(ritual);msg-param-ritual-name=([a-zA-Z0-9_]+);.+;system-msg=(.+);tmi.+USERNOTICE\s#([a-zA-Z0-9]+)\s+:(.+)");
+                if (match.Success)
+                {
+                    string username = match.Groups[2].Value;
+                    string ritual = match.Groups[3].Value;
+                    string typeOfRitual = match.Groups[4].Value;
+                    string event_message = match.Groups[5].Value;
+                    string channel = match.Groups[6].Value;
+                    string user_message = match.Groups[7].Value;
+                    RitualEvent ritual_event = new RitualEvent(username, ritual, typeOfRitual, event_message, channel, user_message);
+                    RunOnRitualEvent(ritual_event);
+                    return CallbackAction.SKIP_OTHERS;
+                }
+                return CallbackAction.CONTINUE;
+            });
+
+            /*
                 Callback if user sends !github command, it responds back with github url
              */
-            Callbacks_ChannelMessage.Add((ChannelMessage channelMessage) =>
+            Callbacks_ChannelMessage.Add((ChannelMessageEvent channelMessage) =>
             {
                 if (channelMessage.Message.Contains(IRCSymbols.CustomChannelCommands.GITHUB))
                 {
@@ -229,7 +284,6 @@ namespace MightyPecoBot
                 return CallbackAction.SKIP_OTHERS;
             });
         }
-
 
         /**
             This methods cleanups the the running thread for the receiving socket
@@ -315,12 +369,6 @@ namespace MightyPecoBot
             string data = IRCSymbols.FormatChannelMessage(channel, message);
             Socket.Send(data);
         }
-        public void SendToChannel(string message)
-        {
-            BotLogger.LogMessage(message);
-            string data = IRCSymbols.FormatChannelMessage(DefaultChannel, message);
-            Socket.Send(data);
-        }
         private void RequestTwitchMembershipStateEvents()
         {
             BotLogger.LogDebug("Requesting Membership capabilities.");
@@ -356,7 +404,7 @@ namespace MightyPecoBot
             BotLogger.LogDebug($"It took: {deltaTime}ms to run callbacks.");
         }
 
-        private void RunOnChannelMessageCallbacks(ChannelMessage channelMessage)
+        private void RunOnChannelMessageCallbacks(ChannelMessageEvent channelMessage)
         {
             BotLogger.LogMessage($"#{channelMessage.Channel} <{channelMessage.Username}> {channelMessage.Message}");
             foreach (var callback in this.Callbacks_ChannelMessage)
@@ -407,7 +455,25 @@ namespace MightyPecoBot
                     break;
         }
 
-        public void OnChannelMessage(Func<ChannelMessage, CallbackAction> callback)
+
+        private void RunOnRitualEvent(RitualEvent ritualEvent)
+        {
+            BotLogger.LogMessage(ritualEvent.EventMessage);
+            foreach (var callback in this.Callbacks_RitualEvent)
+                if (callback(ritualEvent) == CallbackAction.SKIP_OTHERS)
+                    break;
+        }
+
+        private void RunOnBitsEvent(BitsEvent bitsEvent)
+        {
+            BotLogger.LogMessage($"{bitsEvent.Username} sent {bitsEvent.NumberOfBits} bits!");
+            foreach (var callback in this.Callbacks_BitsEvent)
+                if (callback(bitsEvent) == CallbackAction.SKIP_OTHERS)
+                    break;
+        }
+
+
+        public void OnChannelMessage(Func<ChannelMessageEvent, CallbackAction> callback)
         {
             this.Callbacks_ChannelMessage.Add(callback);
         }
@@ -438,6 +504,11 @@ namespace MightyPecoBot
             this.Callbacks_RaidingEvent.Add(callback);
         }
 
+        public void OnBitsEvent(Func<BitsEvent, CallbackAction> callback)
+        {
+            this.Callbacks_BitsEvent.Add(callback);
+        }
+
         //FIXME: need to fix all of this to receive a channel
         /*
             Twitch commands implementation
@@ -446,77 +517,80 @@ namespace MightyPecoBot
         /**
             Bans a user from the channel
          */
-        public void BanUser(string username)
+        public void BanUser(string channel, string username)
         {
             string data = $"{IRCSymbols.Commands.BAN} {username}";
-            SendToChannel(data);
+            SendToChannel(channel, data);
         }
 
         /**
             Unbans a user from the channel
          */
-        public void UnbanUser(string username)
+        public void UnbanUser(string channel, string username)
         {
             string data = $"{IRCSymbols.Commands.UNBAN} {username}";
-            SendToChannel(data);
+            SendToChannel(channel, data);
         }
 
         /**
             Deletes messages from the chat
          */
-        public void ClearChat()
+        public void ClearChat(string channel)
         {
             string data = $"{IRCSymbols.Commands.CLEAR}";
-            SendToChannel(data);
+            SendToChannel(channel, data);
         }
 
         /**
             Changes your username color
             #Either use predefined colors from twitch or hex format #000000
          */
-        public void ChangeColor(string color)
+        public void ChangeColor(string channel, string color)
         {
             string data = $"{IRCSymbols.Commands.COLOR} {color}";
-            SendToChannel(data);
+            SendToChannel(channel, data);
         }
 
         /**
             Send a commercial break
          */
-        public void Commercial()
+        public void Commercial(string channel)
         {
-            SendToChannel(IRCSymbols.Commands.COMMERCIAL);
+            SendToChannel(channel, IRCSymbols.Commands.COMMERCIAL);
         }
         /**
         
             Sends delete command
             * Caveat: I don't know what it does
          */
-        public void Delete()
+        public void Delete(string channel)
         {
-            SendToChannel(IRCSymbols.Commands.DELETE);
+            SendToChannel(channel, IRCSymbols.Commands.DELETE);
         }
 
         /**
             Disconnects the bot,
             it stops everything!
          */
-        public void Disconnect()
+        public void Disconnect(string channel = null)
         {
             Running = false;
-            SendToChannel(IRCSymbols.Commands.DISCONNECT);
+            if (string.IsNullOrEmpty(channel))
+            { SendToChannel(this.DefaultChannel, IRCSymbols.Commands.DISCONNECT); }
+            else
+            { SendToChannel(channel, IRCSymbols.Commands.DISCONNECT); }
             CleanUp();
         }
 
         /**
             Sets the channel chat to be emote only(true) or not (false)
          */
-        public void ChangeEmoteOnly(bool isEmoteOnly)
+        public void ChangeEmoteOnly(string channel, bool isEmoteOnly)
         {
             if (isEmoteOnly)
-            { SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_ON); }
+            { SendToChannel(channel, IRCSymbols.Commands.EMOTE_ONLY_ON); }
             else
-            { SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_OFF); }
+            { SendToChannel(channel, IRCSymbols.Commands.EMOTE_ONLY_OFF); }
         }
 
         /**
@@ -532,89 +606,106 @@ namespace MightyPecoBot
         /**
             Sends help to the channel asking for the commands
          */
-        public void SendHelp(string extracommand = null)
+        public void SendHelp(string channel, string extracommand = null)
         {
             if (String.IsNullOrEmpty(extracommand))
-                SendToChannel(IRCSymbols.Commands.HELP);
+                SendToChannel(channel, IRCSymbols.Commands.HELP);
             else
-                SendToChannel($"{IRCSymbols.Commands.HELP} {extracommand}");
+                SendToChannel(channel, $"{IRCSymbols.Commands.HELP} {extracommand}");
         }
 
-        public void HostChannel(string channelToHost)
+        public void HostChannel(string channelToHost, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.HOST} {channelToHost}");
+            string target_channel = null;
+            if (string.IsNullOrEmpty(channel))
+                target_channel = this.DefaultChannel;
+            else
+                target_channel = channel;
+            SendToChannel(channel, $"{IRCSymbols.Commands.HOST} {channelToHost}");
         }
 
-        public void UnHost()
+        public void UnHost(string channel = null)
         {
-            SendToChannel(IRCSymbols.Commands.UNHOST);
+            string target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(channel, IRCSymbols.Commands.UNHOST);
         }
 
-        public void SetMarker(string markingName = null)
+        public void SetMarker(string channel, string markingName = null)
         {
             if (String.IsNullOrEmpty(markingName))
             {
-                SendToChannel(IRCSymbols.Commands.MARKER);
+                SendToChannel(channel, IRCSymbols.Commands.MARKER);
             }
             else
             {
-                SendToChannel($"{IRCSymbols.Commands.MARKER} {markingName}");
+                SendToChannel(channel, $"{IRCSymbols.Commands.MARKER} {markingName}");
             }
         }
-
-        public void SendMe(string message)
+        /*
+            Sends a message in the fird person like, with a differnt color.
+         */
+        public void SendMe(string message, string channel = null)
         {
-            SendToChannel(message);
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, message);
         }
 
-        public void SendMod(string username)
+        public void SendMod(string username, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.PROMOTE_TO_MOD}, {username}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.PROMOTE_TO_MOD}, {username}");
         }
 
-        public void SendUnmod(string username)
+        public void SendUnmod(string username, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.UNMOD}, {username}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.UNMOD}, {username}");
         }
 
-        public void ListMods()
+        public void ListMods(string channel = null)
         {
             //TODO: Parse message to list moderators
-            SendToChannel(IRCSymbols.Commands.LIST_MODS);
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, IRCSymbols.Commands.LIST_MODS);
         }
 
-        public void SendSetR9KMode(bool isR9KMode)
+        public void SendSetR9KMode(bool isR9KMode, string channel = null)
         {
+            var target_channel = (channel == null) ? DefaultChannel : channel;
             if (isR9KMode)
-                SendToChannel(IRCSymbols.Commands.R9KBETA_ON);
+                SendToChannel(target_channel, IRCSymbols.Commands.R9KBETA_ON);
             else
-                SendToChannel(IRCSymbols.Commands.R9KBETA_OFF);
+                SendToChannel(target_channel, IRCSymbols.Commands.R9KBETA_OFF);
         }
 
-        public void SendRaidChannel(string channel)
+        public void SendRaidChannel(string whereTo, string fromWhatChannel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.RAID} {channel}");
+            var target_channel = (fromWhatChannel == null) ? DefaultChannel : fromWhatChannel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.RAID} {whereTo}");
         }
 
-        public void SendUnRaid()
+        public void SendUnRaid(string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.UNRAID}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(channel, $"{IRCSymbols.Commands.UNRAID}");
         }
 
-        public void SendSetSlowChannel(bool isSlow)
+        public void SendSetSlowChannel(bool isSlow, string channel = null)
         {
+            var target_channel = (channel == null) ? DefaultChannel : channel;
             if (isSlow)
-                SendToChannel(IRCSymbols.Commands.SLOW_ON);
+                SendToChannel(target_channel, IRCSymbols.Commands.SLOW_ON);
             else
-                SendToChannel(IRCSymbols.Commands.SLOW_OFF);
+                SendToChannel(target_channel, IRCSymbols.Commands.SLOW_OFF);
         }
 
-        public void SendSubsOnly(bool isSubsOnly)
+        public void SendSubsOnly(bool isSubsOnly, string channel = null)
         {
+            var target_channel = (channel == null) ? DefaultChannel : channel;
             if (isSubsOnly)
-                SendToChannel(IRCSymbols.Commands.SUBSCRIBERS_ONLY);
+                SendToChannel(target_channel, IRCSymbols.Commands.SUBSCRIBERS_ONLY);
             else
-                SendToChannel(IRCSymbols.Commands.SUBSCRIBERS_OFF);
+                SendToChannel(target_channel, IRCSymbols.Commands.SUBSCRIBERS_OFF);
         }
 
         /**
@@ -627,34 +718,40 @@ namespace MightyPecoBot
         Reason is optional and will be shown to the target user and other moderators.
         Use "untimeout" to remove a timeout.
          */
-        public void SendTimeout(string username, int duration, string time_unit, string reason)
+        public void SendTimeout(string username, int duration, string time_unit, string reason, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.TIMEOUT} {username} {duration} {time_unit} {reason}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.TIMEOUT} {username} {duration} {time_unit} {reason}");
         }
 
-        public void SendRemoveTimeout(string username)
+        public void SendRemoveTimeout(string username, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.UNTIMEOUT} {username}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.UNTIMEOUT} {username}");
         }
 
-        public void SendVIP(string username)
+        public void SendVIP(string username, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.VIP} {username}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.VIP} {username}");
         }
 
-        public void SendUNVIP(string username)
+        public void SendUNVIP(string username, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.UNVIP} {username}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.UNVIP} {username}");
         }
 
-        public void SendListVIPS()
+        public void SendListVIPS(string channel = null)
         {
-            SendToChannel(IRCSymbols.Commands.VIPS);
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, IRCSymbols.Commands.VIPS);
         }
 
-        public void SendWhisper(string username, string message)
+        public void SendWhisper(string username, string message, string channel = null)
         {
-            SendToChannel($"{IRCSymbols.Commands.WHISPER} {username} {message}");
+            var target_channel = (channel == null) ? DefaultChannel : channel;
+            SendToChannel(target_channel, $"{IRCSymbols.Commands.WHISPER} {username} {message}");
         }
     }
 }

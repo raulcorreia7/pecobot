@@ -3,7 +3,7 @@
 namespace MightyPecoBot.Parsing
 
 {
-    public class ChannelMessage
+    public class ChannelMessageEvent
     {
         public string Channel { get; }
         public string Username { get; }
@@ -12,7 +12,7 @@ namespace MightyPecoBot.Parsing
         public string badge { get; }
         public int badge_version { get; }
 
-        public ChannelMessage(string channel, string username, string message, string messageID, string badge, int badge_version)
+        public ChannelMessageEvent(string channel, string username, string message, string messageID, string badge, int badge_version)
         {
             this.Channel = channel;
             this.Username = username;
@@ -33,12 +33,33 @@ namespace MightyPecoBot.Parsing
                 this.badge_version = -1;
             }
         }
+
         public bool IsAdmin => this.badge == IRCSymbols.Badges.ADMIN;
         public bool IsBroadcaster => this.badge == IRCSymbols.Badges.BROADCASTER;
         public bool IsGlobalMod => this.badge == IRCSymbols.Badges.GLOBAL_MOD;
         public bool IsModerator => this.badge == IRCSymbols.Badges.MODERATOR;
         public bool IsSubscriber => this.badge == IRCSymbols.Badges.SUBSCRIBER;
         public bool IsStaff => this.badge == IRCSymbols.Badges.STAFF;
+    }
+
+    public class BitsEvent
+    {
+        public string Badge;
+        public string Version;
+        public int NumberOfBits;
+        public string Username;
+        public string Channel;
+        public string Message;
+        public BitsEvent(string badge, string version, int numberOfBits
+                        , string username, string channel, string message)
+        {
+            this.Badge = badge;
+            this.Version = version;
+            this.NumberOfBits = numberOfBits;
+            this.Username = username;
+            this.Channel = channel;
+            this.Message = message;
+        }
     }
 
     public class UserActionUponChannel
@@ -123,6 +144,26 @@ namespace MightyPecoBot.Parsing
             this.RaiderChannel = RaiderChannel;
             this.NumberOfViewers = numberOfViewers;
             this.Message = message;
+        }
+    }
+
+    public class RitualEvent
+    {
+        public string Username;
+        public string Ritual;
+        public string TypeOfRitual;
+        public string EventMessage;
+        public string Channel;
+        public string UserMessage;
+        public RitualEvent(string username, string ritual, string typeOfRitual
+                            , string event_message, string channel, string user_message)
+        {
+            this.Username = username;
+            this.Ritual = ritual;
+            this.TypeOfRitual = typeOfRitual;
+            this.EventMessage = event_message;
+            this.Channel = channel;
+            this.UserMessage = user_message;
         }
     }
 
