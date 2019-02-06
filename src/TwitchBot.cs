@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using MightyPecoBot.Network;
 using MightyPecoBot.Parsing;
-
+using MightyPecoBot.Callbacks;
 namespace MightyPecoBot
 {
     class TwitchBot
@@ -25,11 +25,11 @@ namespace MightyPecoBot
 
         public Thread ReceivingThread;
 
-        List<Action<string>> NormalCallbacks = new List<Action<string>>();
+        List<Func<string, CallbackAction>> NormalCallbacks = new List<Func<string, CallbackAction>>();
 
-        List<Action<ChannelMessage>> Callbacks_ChannelMessage = new List<Action<ChannelMessage>>();
-        List<Action<UserActionUponChannel>> Callbacks_JoinedChannel = new List<Action<UserActionUponChannel>>();
-        List<Action<UserActionUponChannel>> Callbacks_LeaveChannel = new List<Action<UserActionUponChannel>>();
+        List<Func<ChannelMessage, CallbackAction>> Callbacks_ChannelMessage = new List<Func<ChannelMessage, CallbackAction>>();
+        List<Func<UserActionUponChannel, CallbackAction>> Callbacks_JoinedChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
+        List<Func<UserActionUponChannel, CallbackAction>> Callbacks_LeaveChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
         public TwitchBot(string username, string channel)
         {
             Username = username;
@@ -56,6 +56,7 @@ namespace MightyPecoBot
                 {
                     sendPONG();
                 }
+                return CallbackAction.SKIP_OTHERS;
             });
             /*
                 This parses the channel,username and message and fires the OnChannelMessage Event
@@ -88,6 +89,7 @@ namespace MightyPecoBot
                         RunOnChannelMessageCallbacks(channel_message);
                     }
                 }
+                return CallbackAction.SKIP_OTHERS;
             });
 
             NormalCallbacks.Add((string data) =>
@@ -96,6 +98,7 @@ namespace MightyPecoBot
                 {
                     BotLogger.LogError("[ >> Unknown command! ]");
                 }
+                return CallbackAction.SKIP_OTHERS;
             });
 
             /*
@@ -109,7 +112,7 @@ namespace MightyPecoBot
                     UserActionUponChannel joinChannel = new UserActionUponChannel(channel: match.Groups[2].Value, username: match.Groups[1].Value);
                     RunOnJoinedChannelCallback(joinChannel);
                 }
-
+                return CallbackAction.SKIP_OTHERS;
             });
 
             NormalCallbacks.Add((string data) =>
@@ -120,7 +123,7 @@ namespace MightyPecoBot
                     UserActionUponChannel leaveChannel = new UserActionUponChannel(channel: match.Groups[2].Value, username: match.Groups[1].Value);
                     RunOnLeaveChannelCallback(leaveChannel);
                 }
-
+                return CallbackAction.SKIP_OTHERS;
             });
 
 
@@ -130,7 +133,7 @@ namespace MightyPecoBot
                 {
                     SendToChannel(channel: channelMessage.Channel, message: GITHUB_URL);
                 }
-
+                return CallbackAction.SKIP_OTHERS;
             });
         }
 
@@ -230,48 +233,59 @@ namespace MightyPecoBot
                 {
                     /*  Parse
                         decide what to do with data
-
                     */
+
                     BotLogger.LogDebug(data);
-                    foreach (var callback in NormalCallbacks)
-                    {
-                        callback(data);
-                    }
+                    RunCallbacks(data);
                 }
             }
+        }
+
+        private void RunCallbacks(string data)
+        {
+            long start = DateTime.Now.Millisecond;
+            foreach (var callback in NormalCallbacks)
+            {
+                callback(data);
+            }
+            long deltaTime = DateTime.Now.Millisecond - start;
+            BotLogger.LogDebug($"It took: {deltaTime}ms to run callbacks.");
         }
 
         private void RunOnChannelMessageCallbacks(ChannelMessage channelMessage)
         {
             BotLogger.LogMessage($"#{channelMessage.Channel} <{channelMessage.Username}> {channelMessage.Message}");
             foreach (var callback in this.Callbacks_ChannelMessage)
-                callback(channelMessage);
+                if (callback(channelMessage) == CallbackAction.SKIP_OTHERS)
+                    break;
         }
 
         private void RunOnJoinedChannelCallback(UserActionUponChannel information)
         {
             BotLogger.LogMessage($"{information.Username} joined the channel: #{information.Channel}");
             foreach (var callback in this.Callbacks_JoinedChannel)
-                callback(information);
+                if (callback(information) == CallbackAction.SKIP_OTHERS)
+                    break;
         }
 
         private void RunOnLeaveChannelCallback(UserActionUponChannel information)
         {
             BotLogger.LogMessage($"{information.Username} left the channel: #{information.Channel}");
             foreach (var callback in this.Callbacks_LeaveChannel)
-                callback(information);
+                if (callback(information) == CallbackAction.SKIP_OTHERS)
+                    break;
         }
-        public void OnChannelMessage(Action<ChannelMessage> callback)
+        public void OnChannelMessage(Func<ChannelMessage, CallbackAction> callback)
         {
             this.Callbacks_ChannelMessage.Add(callback);
         }
 
-        public void OnJoinChannel(Action<UserActionUponChannel> callback)
+        public void OnJoinChannel(Func<UserActionUponChannel, CallbackAction> callback)
         {
             this.Callbacks_JoinedChannel.Add(callback);
         }
 
-        public void OnLeaveChannel(Action<UserActionUponChannel> callback)
+        public void OnLeaveChannel(Func<UserActionUponChannel, CallbackAction> callback)
         {
             this.Callbacks_LeaveChannel.Add(callback);
         }
@@ -393,8 +407,35 @@ namespace MightyPecoBot
         {
             if (String.IsNullOrEmpty(markingName))
             {
-
+                SendToChannel(IRCSymbols.Commands.MARKER);
+            }
+            else
+            {
+                SendToChannel($"{IRCSymbols.Commands.MARKER} {markingName}");
             }
         }
+
+        public void SendMe(string message)
+        {
+            SendToChannel(message);
+        }
+
+        public void SendMOD(string username)
+        {
+            SendToChannel(username);
+        }
+
+        public void SendUnmod(string username)
+        {
+            SendToChannel(username);
+        }
+
+        public void ListMods(string username)
+        {
+            //TODO: Parse message to list moderators
+            SendToChannel(username);
+        }
+
+        
     }
 }
