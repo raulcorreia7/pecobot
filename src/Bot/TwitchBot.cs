@@ -26,24 +26,17 @@ namespace MightyPecoBot
         private Thread ReceivingThread;
 
         private Timer Timer_memory;
+
+        CallbackHandler CallbackHandler;
         /*
         
             Need to hide all these callbacks
          */
-        private List<Func<string, CallbackAction>> NormalCallbacks = new List<Func<string, CallbackAction>>();
-        private List<Func<ChannelMessageEvent, CallbackAction>> Callbacks_ChannelMessage = new List<Func<ChannelMessageEvent, CallbackAction>>();
-        private List<Func<UserActionUponChannel, CallbackAction>> Callbacks_JoinedChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
-        private List<Func<UserActionUponChannel, CallbackAction>> Callbacks_LeaveChannel = new List<Func<UserActionUponChannel, CallbackAction>>();
-        private List<Func<SubscriptionEvent, CallbackAction>> Callbacks_Subscrition = new List<Func<SubscriptionEvent, CallbackAction>>();
-        private List<Func<GiftEvent, CallbackAction>> Callbacks_SubGift = new List<Func<GiftEvent, CallbackAction>>();
-        private List<Func<RaidingEvent, CallbackAction>> Callbacks_RaidingEvent = new List<Func<RaidingEvent, CallbackAction>>();
-        private List<Func<RitualEvent, CallbackAction>> Callbacks_RitualEvent = new List<Func<RitualEvent, CallbackAction>>();
-
-        private List<Func<BitsEvent, CallbackAction>> Callbacks_BitsEvent = new List<Func<BitsEvent, CallbackAction>>();
         public TwitchBot(string username, string channel)
         {
             Username = username;
             DefaultChannel = channel;
+            CallbackHandler = new CallbackHandler();
             Socket = new TCPClientSocket(URL, PORT);
             ReceivingThread = new Thread(ReceiveData);
             DefaultActions();
@@ -59,7 +52,7 @@ namespace MightyPecoBot
             /*
                 This responds to Ping requests
              */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
                 if (Regex.Match(data, IRCSymbols.Keywords.PING).Success)
                 {
@@ -70,7 +63,7 @@ namespace MightyPecoBot
             /*
                 This parses the channel,username and message and fires the OnChannelMessage Event
              */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
                 /* 
                     There are two cases, 
@@ -127,7 +120,7 @@ namespace MightyPecoBot
                             }
                         }
                         ChannelMessageEvent channel_message = new ChannelMessageEvent(channel, username, message, message_id, badge, version);
-                        RunOnChannelMessageCallbacks(channel_message);
+                        CallbackHandler.RunOnChannelMessageCallbacks(channel_message);
                     }
                 }
                 return CallbackAction.SKIP_OTHERS;
@@ -135,7 +128,7 @@ namespace MightyPecoBot
             /*
                 Callback that parses and triggers & logs bad error
              */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
                 if (Regex.Match(data, @":Unknown command").Success)
                 {
@@ -147,32 +140,32 @@ namespace MightyPecoBot
             /*
                 This parses that user joins the channel and fires onJoinChannel callbacks
              */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
                 Match match = Regex.Match(data, @":(.+)!.+ JOIN #(.+)");
                 if (match.Success)
                 {
                     UserActionUponChannel joinChannel = new UserActionUponChannel(channel: match.Groups[2].Value, username: match.Groups[1].Value);
-                    RunOnJoinedChannelCallback(joinChannel);
+                    CallbackHandler.RunOnJoinedChannelCallback(joinChannel);
                 }
                 return CallbackAction.SKIP_OTHERS;
             });
             /*
                 Callback to parse and trigger OnLeaveChannel event
              */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
                 Match match = Regex.Match(data, @":(.+)!.+ PART #(.+)");
                 if (match.Success)
                 {
                     UserActionUponChannel leaveChannel = new UserActionUponChannel(channel: match.Groups[2].Value, username: match.Groups[1].Value);
-                    RunOnLeaveChannelCallback(leaveChannel);
+                    CallbackHandler.RunOnLeaveChannelCallback(leaveChannel);
                 }
                 return CallbackAction.SKIP_OTHERS;
             });
 
             /* Usernotice */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
 
                 //If it matches a sub/resub
@@ -194,7 +187,7 @@ namespace MightyPecoBot
                                                 (badge, version, username,
                                                 subtype, commulative_months, consecutive_months,
                                                 subplan, channel, message);
-                    RunOnSubscribeCallback(subs_event);
+                    CallbackHandler.RunOnSubscribeCallback(subs_event);
                     return CallbackAction.SKIP_OTHERS;
                 }
                 return CallbackAction.CONTINUE;
@@ -202,7 +195,7 @@ namespace MightyPecoBot
             /*
                 Parses a gift event
              */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
                 Match match = Regex.Match(data, @"@badges=(\w+/\d+).+;display-name=([a-zA-Z0-9]+).+;msg-id=(\w+);msg-param-months=(\d+);msg-param-recipient-display-name=([a-zA-Z0-9_]+);.+msg-param-sub-plan=([a-bA-Z0-9]+);");
                 if (match.Success)
@@ -215,7 +208,7 @@ namespace MightyPecoBot
                     string subplan = match.Groups[6].Value;
                     string message = match.Groups[7].Value;
                     GiftEvent giftevent = new GiftEvent(badge_version.badge, badge_version.version, gifter, typeOfGift, total_months, subplan, recipient, message);
-                    RunOnSubGiftCallback(giftevent);
+                    CallbackHandler.RunOnSubGiftCallback(giftevent);
                     return CallbackAction.SKIP_OTHERS;
                 }
                 return CallbackAction.CONTINUE;
@@ -223,7 +216,7 @@ namespace MightyPecoBot
             /*
             Parses a RaidingEvent
              */
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
 
                 Match match = Regex.Match(data, @"@badges=([a-zA-Z0-9]+/\d+);.+login=([a-zA-Z0-9]+);.+;msg-param-viewerCount=(\d+).+;system-msg=(.+)\sUSERNOTICE\s#(.+)");
@@ -235,7 +228,7 @@ namespace MightyPecoBot
                     var message = match.Groups[4].Value;
                     var raidedchannel = match.Groups[5].Value;
                     RaidingEvent raiding_event = new RaidingEvent(tuple.badge, tuple.version, raiderchannel, viewers, message, raidedchannel);
-                    RunOnRaidingCallbacks(raiding_event);
+                    CallbackHandler.RunOnRaidingCallbacks(raiding_event);
                     return CallbackAction.SKIP_OTHERS;
                 }
 
@@ -246,7 +239,7 @@ namespace MightyPecoBot
                 Parses a RitualEvent
              */
 
-            NormalCallbacks.Add((string data) =>
+            CallbackHandler.AddToplevelCallback((string data) =>
             {
                 Match match = Regex.Match(data, @"display-name=([a-zA-Z_0-9]+).+;login=([a-zA-Z_0-9]+).+;msg-id=(ritual);msg-param-ritual-name=([a-zA-Z0-9_]+);.+;system-msg=(.+);tmi.+USERNOTICE\s#([a-zA-Z0-9]+)\s+:(.+)");
                 if (match.Success)
@@ -258,7 +251,7 @@ namespace MightyPecoBot
                     string channel = match.Groups[6].Value;
                     string user_message = match.Groups[7].Value;
                     RitualEvent ritual_event = new RitualEvent(username, ritual, typeOfRitual, event_message, channel, user_message);
-                    RunOnRitualEvent(ritual_event);
+                    CallbackHandler.RunOnRitualEvent(ritual_event);
                     return CallbackAction.SKIP_OTHERS;
                 }
                 return CallbackAction.CONTINUE;
@@ -267,7 +260,7 @@ namespace MightyPecoBot
             /*
                 Callback if user sends !github command, it responds back with github url
              */
-            Callbacks_ChannelMessage.Add((ChannelMessageEvent channelMessage) =>
+            CallbackHandler.AddToChannelMessageCallback((ChannelMessageEvent channelMessage) =>
             {
                 if (channelMessage.Message.Contains(IRCSymbols.CustomChannelCommands.GITHUB))
                 {
@@ -277,7 +270,7 @@ namespace MightyPecoBot
                 return CallbackAction.CONTINUE;
             });
 
-            Callbacks_Subscrition.Add(
+            CallbackHandler.AddToSubscriptionCallback(
                 (SubscriptionEvent subscription) =>
             {
                 SendToChannel(subscription.Channel, "Thanks for the (re)subscription!");
@@ -388,125 +381,46 @@ namespace MightyPecoBot
                         decide what to do with data
                     */
                     BotLogger.LogDebug(data);
-                    RunCallbacks(data);
+                    CallbackHandler.RunCallbacks(data);
                 }
             }
-        }
-
-        private void RunCallbacks(string data)
-        {
-            long start = DateTime.Now.Millisecond;
-            foreach (var callback in NormalCallbacks)
-            {
-                callback(data);
-            }
-            long deltaTime = DateTime.Now.Millisecond - start;
-            BotLogger.LogDebug($"It took: {deltaTime}ms to run callbacks.");
-        }
-
-        private void RunOnChannelMessageCallbacks(ChannelMessageEvent channelMessage)
-        {
-            BotLogger.LogMessage($"#{channelMessage.Channel} <{channelMessage.Username}> {channelMessage.Message}");
-            foreach (var callback in this.Callbacks_ChannelMessage)
-                if (callback(channelMessage) == CallbackAction.SKIP_OTHERS)
-                    break;
-        }
-
-        private void RunOnJoinedChannelCallback(UserActionUponChannel information)
-        {
-            BotLogger.LogMessage($"{information.Username} joined the channel: #{information.Channel}");
-            foreach (var callback in this.Callbacks_JoinedChannel)
-                if (callback(information) == CallbackAction.SKIP_OTHERS)
-                    break;
-        }
-
-        private void RunOnLeaveChannelCallback(UserActionUponChannel information)
-        {
-            BotLogger.LogMessage($"{information.Username} left the channel: #{information.Channel}");
-            foreach (var callback in this.Callbacks_LeaveChannel)
-                if (callback(information) == CallbackAction.SKIP_OTHERS)
-                    break;
-        }
-
-        private void RunOnSubscribeCallback(SubscriptionEvent subEvent)
-        {
-            var re_subscribed = (subEvent.Subtype == "sub") ? "subscribed" : "resubscribed";
-            BotLogger.LogMessage($"{subEvent.Username} {re_subscribed} the channel: #{subEvent.Channel}");
-            foreach (var callback in this.Callbacks_Subscrition)
-                if (callback(subEvent) == CallbackAction.SKIP_OTHERS)
-                    break;
-        }
-
-
-        private void RunOnSubGiftCallback(GiftEvent giftevent)
-        {
-            BotLogger.LogMessage(giftevent.Message);
-            foreach (var callback in this.Callbacks_SubGift)
-                if (callback(giftevent) == CallbackAction.SKIP_OTHERS)
-                    break;
-        }
-
-
-        private void RunOnRaidingCallbacks(RaidingEvent raidingEvent)
-        {
-            BotLogger.LogMessage(raidingEvent.Message);
-            foreach (var callback in this.Callbacks_RaidingEvent)
-                if (callback(raidingEvent) == CallbackAction.SKIP_OTHERS)
-                    break;
-        }
-
-
-        private void RunOnRitualEvent(RitualEvent ritualEvent)
-        {
-            BotLogger.LogMessage(ritualEvent.EventMessage);
-            foreach (var callback in this.Callbacks_RitualEvent)
-                if (callback(ritualEvent) == CallbackAction.SKIP_OTHERS)
-                    break;
-        }
-
-        private void RunOnBitsEvent(BitsEvent bitsEvent)
-        {
-            BotLogger.LogMessage($"{bitsEvent.Username} sent {bitsEvent.NumberOfBits} bits!");
-            foreach (var callback in this.Callbacks_BitsEvent)
-                if (callback(bitsEvent) == CallbackAction.SKIP_OTHERS)
-                    break;
         }
 
 
         public void OnChannelMessage(Func<ChannelMessageEvent, CallbackAction> callback)
         {
-            this.Callbacks_ChannelMessage.Add(callback);
+            this.CallbackHandler.AddToChannelMessageCallback(callback);
         }
 
         public void OnJoinChannel(Func<UserActionUponChannel, CallbackAction> callback)
         {
-            this.Callbacks_JoinedChannel.Add(callback);
+            this.CallbackHandler.AddToJoinedChannelCallback(callback);
         }
 
         public void OnLeaveChannel(Func<UserActionUponChannel, CallbackAction> callback)
         {
-            this.Callbacks_LeaveChannel.Add(callback);
+            this.CallbackHandler.AddToLeaveChannelCallback(callback);
         }
 
         public void OnSubscribe(Func<SubscriptionEvent, CallbackAction> callback)
         {
-            this.Callbacks_Subscrition.Add(callback);
+            this.CallbackHandler.AddToSubscriptionCallback(callback);
         }
 
         public void OnSubGift(Func<GiftEvent, CallbackAction> callback)
         {
-            this.Callbacks_SubGift.Add(callback);
+            this.CallbackHandler.AddToSubGiftCallback(callback);
         }
 
         public void OnRaidingEvent(Func<RaidingEvent, CallbackAction> callback)
         {
 
-            this.Callbacks_RaidingEvent.Add(callback);
+            this.CallbackHandler.AddToRaidingEventCallback(callback);
         }
 
         public void OnBitsEvent(Func<BitsEvent, CallbackAction> callback)
         {
-            this.Callbacks_BitsEvent.Add(callback);
+            this.CallbackHandler.AddToBitsEventCallback(callback);
         }
 
         //FIXME: need to fix all of this to receive a channel
