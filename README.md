@@ -1,6 +1,6 @@
 # MightyPecoBot
-MightyPecoBot is a TwitchBot implemented from scratch.  
-I used .net core 2.1 with no libraries.
+MightyPecoBot is a TwitchBot implemented from scratch for funsies.  
+I used .net core 2.1 with no external libraries.
 
 ## Installation
 
