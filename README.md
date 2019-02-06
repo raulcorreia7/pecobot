@@ -101,8 +101,7 @@ class Program{
     }
 }
 ```
-###
-Tips:
+### Tips:
     Be sure if you want your callbacks to stop or continue,
     they are all saved and called iteratively.
     If you use CallbackAction.SKIP_OTHERS, no more callbacks will be called for the same type of event.
