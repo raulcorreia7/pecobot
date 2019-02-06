@@ -11,7 +11,8 @@ namespace MightyPecoBot
         {
             MESSAGES_ONLY,
             NO_LOG,
-            DEBUG
+            DEBUG,
+            ERROR
         }
 
         //FIXME: VALIDATE USER INPUT
@@ -28,16 +29,21 @@ namespace MightyPecoBot
             PrintLog(message, LOG_LEVEL.DEBUG);
         }
 
+        public static void LogError(string message)
+        {
+            PrintLog(message, LOG_LEVEL.ERROR);
+        }
+
         public static void PrintLog(string message, LOG_LEVEL level)
         {   //[HH:MM:SS] - Level - Message
             if (LogLevel == LOG_LEVEL.NO_LOG) return;
-            if (LogLevel >= level)
+            if (LogLevel >= level || level == LOG_LEVEL.ERROR)
             {
 
                 DateTime now = DateTime.Now;
                 string time = now.ToString("HH:mm:ss");
                 string log_name = LogLevelString(level);
-                Console.WriteLine(time + " " + log_name + " " + message);
+                Console.WriteLine($"[{time}] [{log_name}] {message}");
             }
         }
 
@@ -51,6 +57,8 @@ namespace MightyPecoBot
                     return "MESSAGE";
                 case LOG_LEVEL.DEBUG:
                     return "DEBUG";
+                case LOG_LEVEL.ERROR:
+                    return "ERROR";
                 default:
                     return "UNKNOWN";
             }

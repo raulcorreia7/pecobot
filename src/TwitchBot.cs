@@ -25,7 +25,7 @@ namespace MightyPecoBot
 
         public Thread ReceivingThread;
 
-        List<Action<string>> MajorCallbacks = new List<Action<string>>();
+        List<Action<string>> NormalCallbacks = new List<Action<string>>();
 
         List<Action<ChannelMessage>> Callbacks_ChannelMessage = new List<Action<ChannelMessage>>();
         List<Action<UserActionUponChannel>> Callbacks_JoinedChannel = new List<Action<UserActionUponChannel>>();
@@ -50,7 +50,7 @@ namespace MightyPecoBot
             /*
                 This responds to Ping requests
              */
-            MajorCallbacks.Add((string data) =>
+            NormalCallbacks.Add((string data) =>
             {
                 if (Regex.Match(data, IRCSymbols.PING).Success)
                 {
@@ -60,7 +60,7 @@ namespace MightyPecoBot
             /*
                 This parses the channel,username and message and fires the OnChannelMessage Event
              */
-            MajorCallbacks.Add((string data) =>
+            NormalCallbacks.Add((string data) =>
             {
                 //If PRIVMSG, fire onMessageEvent
                 //Optimize this to just one regular expression
@@ -90,10 +90,18 @@ namespace MightyPecoBot
                 }
             });
 
+            NormalCallbacks.Add((string data) =>
+            {
+                if (Regex.Match(data, @":Unknown command").Success)
+                {
+                    BotLogger.LogError("[ >> Unknown command! ]");
+                }
+            });
+
             /*
                 This parses that user joins the channel and fires onJoinChannel callbacks
              */
-            MajorCallbacks.Add((string data) =>
+            NormalCallbacks.Add((string data) =>
             {
                 Match match = Regex.Match(data, @":(.+)!.+ JOIN #(.+)");
                 if (match.Success)
@@ -104,7 +112,7 @@ namespace MightyPecoBot
 
             });
 
-            MajorCallbacks.Add((string data) =>
+            NormalCallbacks.Add((string data) =>
             {
                 Match match = Regex.Match(data, @":(.+)!.+ PART #(.+)");
                 if (match.Success)
@@ -225,12 +233,47 @@ namespace MightyPecoBot
 
                     */
                     BotLogger.LogDebug(data);
-                    foreach (var callback in MajorCallbacks)
+                    foreach (var callback in NormalCallbacks)
                     {
                         callback(data);
                     }
                 }
             }
+        }
+
+        private void RunOnChannelMessageCallbacks(ChannelMessage channelMessage)
+        {
+            BotLogger.LogMessage($"#{channelMessage.Channel} <{channelMessage.Username}> {channelMessage.Message}");
+            foreach (var callback in this.Callbacks_ChannelMessage)
+                callback(channelMessage);
+        }
+
+        private void RunOnJoinedChannelCallback(UserActionUponChannel information)
+        {
+            BotLogger.LogMessage($"{information.Username} joined the channel: #{information.Channel}");
+            foreach (var callback in this.Callbacks_JoinedChannel)
+                callback(information);
+        }
+
+        private void RunOnLeaveChannelCallback(UserActionUponChannel information)
+        {
+            BotLogger.LogMessage($"{information.Username} left the channel: #{information.Channel}");
+            foreach (var callback in this.Callbacks_LeaveChannel)
+                callback(information);
+        }
+        public void OnChannelMessage(Action<ChannelMessage> callback)
+        {
+            this.Callbacks_ChannelMessage.Add(callback);
+        }
+
+        public void OnJoinChannel(Action<UserActionUponChannel> callback)
+        {
+            this.Callbacks_JoinedChannel.Add(callback);
+        }
+
+        public void OnLeaveChannel(Action<UserActionUponChannel> callback)
+        {
+            this.Callbacks_LeaveChannel.Add(callback);
         }
 
 
@@ -307,48 +350,51 @@ namespace MightyPecoBot
         /**
             Sets the channel chat to be emote only(true) or not (false)
          */
-        public void EmoteOnly(bool isEmoteOnly)
+        public void ChangeEmoteOnly(bool isEmoteOnly)
         {
-
             if (isEmoteOnly)
-                SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_ON);
+            { SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_ON); }
             else
-                SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_OFF);
+            { SendToChannel(IRCSymbols.Commands.EMOTE_ONLY_OFF); }
         }
 
-        private void RunOnChannelMessageCallbacks(ChannelMessage channelMessage)
+        /**
+            Changes the cannel to follower only or not
+         */
+        public void ChangeFollower(string channel, bool isFollowerOnly)
         {
-            BotLogger.LogMessage($"#{channelMessage.Channel} <{channelMessage.Username}> {channelMessage.Message}");
-            foreach (var callback in this.Callbacks_ChannelMessage)
-                callback(channelMessage);
+            if (isFollowerOnly)
+            { SendToChannel(channel, IRCSymbols.Commands.FOLLOWERS_ON); }
+            else
+            { SendToChannel(channel, IRCSymbols.Commands.FOLLOWERS_OFF); }
+        }
+        /**
+            Sends help to the channel asking for the commands
+         */
+        public void SendHelp(string extracommand = null)
+        {
+            if (String.IsNullOrEmpty(extracommand))
+                SendToChannel(IRCSymbols.Commands.HELP);
+            else
+                SendToChannel($"{IRCSymbols.Commands.HELP} {extracommand}");
         }
 
-        private void RunOnJoinedChannelCallback(UserActionUponChannel information)
+        public void HostChannel(string channelToHost)
         {
-            BotLogger.LogMessage($"{information.Username} joined the channel: #{information.Channel}");
-            foreach (var callback in this.Callbacks_JoinedChannel)
-                callback(information);
+            SendToChannel($"{IRCSymbols.Commands.HOST} {channelToHost}");
         }
 
-        private void RunOnLeaveChannelCallback(UserActionUponChannel information)
+        public void UnHost()
         {
-            BotLogger.LogMessage($"{information.Username} left the channel: #{information.Channel}");
-            foreach (var callback in this.Callbacks_LeaveChannel)
-                callback(information);
-        }
-        public void OnChannelMessage(Action<ChannelMessage> callback)
-        {
-            this.Callbacks_ChannelMessage.Add(callback);
+            SendToChannel(IRCSymbols.Commands.UNHOST);
         }
 
-        public void OnJoinChannel(Action<UserActionUponChannel> callback)
+        public void SetMarker(string markingName = null)
         {
-            this.Callbacks_JoinedChannel.Add(callback);
-        }
+            if (String.IsNullOrEmpty(markingName))
+            {
 
-        public void OnLeaveChannel(Action<UserActionUponChannel> callback)
-        {
-            this.Callbacks_LeaveChannel.Add(callback);
+            }
         }
     }
 }
