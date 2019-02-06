@@ -12,10 +12,8 @@ namespace MightyPecoBot
     {
 
         public const string GITHUB_URL = "https://github.com/raulcorreia7/pecobot";
-        public const string URL = "irc.chat.twitch.tv";
 
         //FIXME: Be aware of port, may change with SSL and Websockets
-        public const int PORT = 6667;
         public string Username { get; }
         public string DefaultChannel { get; }
 
@@ -37,7 +35,7 @@ namespace MightyPecoBot
             Username = username;
             DefaultChannel = channel;
             CallbackHandler = new CallbackHandler();
-            Socket = new TCPClientSocket(URL, PORT);
+            Socket = SocketFactory.createSocketConnection(ConnectionType.TCP_UNENCRYPTED);
             ReceivingThread = new Thread(ReceiveData);
             DefaultActions();
         }

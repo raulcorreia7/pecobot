@@ -1,0 +1,61 @@
+
+
+using System.IO;
+using System.Net.Sockets;
+
+namespace MightyPecoBot.Network
+{
+    /**
+        Class that handles TCP Connection
+     */
+    class TCPSSLClientSocket : IClientSocket
+    {
+        public TcpClient Socket;
+        public NetworkStream NetworkStream;
+        public StreamReader StreamReader;
+        public StreamWriter StreamWriter;
+
+        public string URL { get; }
+        public int PORT { get; }
+
+        public TCPSSLClientSocket(string url, int port)
+        {
+            Socket = new TcpClient(url, port);
+            NetworkStream = Socket.GetStream();
+            StreamReader = new StreamReader(NetworkStream);
+            StreamWriter = new StreamWriter(NetworkStream);
+            this.URL = url;
+            this.PORT = port;
+        }
+
+        ~TCPSSLClientSocket()
+        {
+            StreamWriter.Close();
+            StreamReader.Close();
+            NetworkStream.Close();
+            Socket.Close();
+        }
+
+        public void Connect()
+        {
+            if (!Socket.Connected)
+            {
+                Socket.Connect(URL, PORT);
+            }
+        }
+
+        public bool IsConnected() => Socket.Connected;
+        public string Receive()
+        {   
+            //This has an exception, we need to treat it
+            return StreamReader.ReadLine();
+        }
+
+        public void Send(string message)
+        {
+            StreamWriter.WriteLine(message);
+            StreamWriter.Flush();
+        }
+
+    }
+}
