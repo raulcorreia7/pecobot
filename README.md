@@ -1,10 +1,10 @@
 # MightyPecoBot
-MightyPecoBot is a TwitchBot implemented from scratch.  
-It uses dotnet core 2.0
+MightyPecoBot is a TwitchBot implemented from scratch for funsies.  
+I used .net core 2.1 with no external libraries.
 
 ## Installation
 
-Clone the repository and copy the classes to your .Net Project
+Clone the repository and copy the classes to your .net Project
 ```bash
 git clone https://github.com/raulcorreia7/pecobot
 ```
@@ -52,7 +52,7 @@ class Program
 ```csharp
 using MightyPecoBot.Callbacks;
 using MightyPecoBot.Parsing;
-public Program{
+class Program{
     static void Main(string[] args)
     {
         TwitchBot clientbot = new TwitchBot(USERNAME, CHANNEL);
@@ -101,12 +101,15 @@ public Program{
     }
 }
 ```
+### Tips:
+    Be sure if you want your callbacks to stop or continue,
+    they are all saved and called iteratively.
+    If you use CallbackAction.SKIP_OTHERS, no more callbacks will be called for the same type of event.
 ## Classes used
 ![Class Diagram](classdiagram.png)
+The class diagram is very condensed, there are many more functions implemented ready to use.
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-Please make sure to update tests as appropriate.
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
