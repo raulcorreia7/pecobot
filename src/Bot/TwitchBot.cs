@@ -35,7 +35,7 @@ namespace MightyPecoBot
             Username = username;
             DefaultChannel = channel;
             CallbackHandler = new CallbackHandler();
-            Socket = SocketFactory.createSocketConnection(ConnectionType.TCP_UNENCRYPTED);
+            Socket = SocketFactory.createSocketConnection(ConnectionType.TCP_SSL);
             ReceivingThread = new Thread(ReceiveData);
             DefaultActions();
         }

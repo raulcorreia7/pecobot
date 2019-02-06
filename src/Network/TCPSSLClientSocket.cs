@@ -1,6 +1,8 @@
 
 
+using System;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
 
 namespace MightyPecoBot.Network
@@ -11,7 +13,8 @@ namespace MightyPecoBot.Network
     class TCPSSLClientSocket : IClientSocket
     {
         public TcpClient Socket;
-        public NetworkStream NetworkStream;
+
+        SslStream Sslstream;
         public StreamReader StreamReader;
         public StreamWriter StreamWriter;
 
@@ -20,19 +23,17 @@ namespace MightyPecoBot.Network
 
         public TCPSSLClientSocket(string url, int port)
         {
-            Socket = new TcpClient(url, port);
-            NetworkStream = Socket.GetStream();
-            StreamReader = new StreamReader(NetworkStream);
-            StreamWriter = new StreamWriter(NetworkStream);
+            Socket = new TcpClient();
             this.URL = url;
             this.PORT = port;
         }
 
         ~TCPSSLClientSocket()
         {
+            if (Socket == null || this.Sslstream == null || StreamReader == null || StreamWriter == null) return;
             StreamWriter.Close();
             StreamReader.Close();
-            NetworkStream.Close();
+            Sslstream.Close();
             Socket.Close();
         }
 
@@ -41,14 +42,25 @@ namespace MightyPecoBot.Network
             if (!Socket.Connected)
             {
                 Socket.Connect(URL, PORT);
+                Sslstream = new SslStream(Socket.GetStream());
+                Sslstream.AuthenticateAsClient(URL);
+                StreamReader = new StreamReader(Sslstream);
+                StreamWriter = new StreamWriter(Sslstream);
             }
         }
 
         public bool IsConnected() => Socket.Connected;
         public string Receive()
-        {   
-            //This has an exception, we need to treat it
-            return StreamReader.ReadLine();
+        {
+            if (Socket.Connected)
+            {
+                //This has an exception, we need to treat it
+                return StreamReader.ReadLine();
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         public void Send(string message)

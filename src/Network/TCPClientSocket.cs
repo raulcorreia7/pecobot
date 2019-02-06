@@ -1,5 +1,6 @@
 
 
+using System;
 using System.IO;
 using System.Net.Sockets;
 
@@ -27,6 +28,7 @@ namespace MightyPecoBot.Network
 
         ~TCPClientSocket()
         {
+            if (NetworkStream == null || StreamReader == null || StreamWriter == null) return;
             StreamWriter.Close();
             StreamReader.Close();
             NetworkStream.Close();
@@ -47,14 +49,24 @@ namespace MightyPecoBot.Network
         public bool IsConnected() => Socket.Connected;
         public string Receive()
         {
-            //This has an exception, we need to treat it
-            return StreamReader.ReadLine();
+            if (Socket.Connected)
+            {
+                //This has an exception, we need to treat it
+                return StreamReader.ReadLine();
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         public void Send(string message)
         {
-            StreamWriter.WriteLine(message);
-            StreamWriter.Flush();
+            if (Socket.Connected)
+            {
+                StreamWriter.WriteLine(message);
+                StreamWriter.Flush();
+            }
         }
 
     }
