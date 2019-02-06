@@ -28,6 +28,7 @@ namespace MightyPecoBot
             //BotLogger.LogLevel = LOG_LEVEL.DEBUG;
             /*
                 You need to provide your own token
+                https://twitchapps.com/tmi/ 
              */
             string OATH_TOKEN = System.IO.File.ReadAllText("oath.txt");
             TwitchBot clientbot = new TwitchBot(USERNAME, CHANNEL);
