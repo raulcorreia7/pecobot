@@ -4,9 +4,15 @@ Pecobot:
     ✔ TCP @done(19-02-01 19:59)
     ☐ Websocket
     ☐ SSL?
-  Protocol:
-    ☐ ?
-  ☐ Events
+  Events:
+    ☐ OnJoin/Leave Channel
+    ☐ OnMessageChannel
+    ☐ ??
+    Parse Events:
+      ☐ Subscribe
+      ☐ Bits
+      ☐ Follow
+      ☐ Donate
   ✔ Reimplement a way to see console output @done(19-02-02 16:36)
   Things to do:
     ✔ Parsing messages @done(19-02-05 01:25)
@@ -18,11 +24,9 @@ Pecobot:
       ✔ Emote only @done(19-02-02 19:05)
     ☐ Parse Unknown commands
     ☐ Throttle message rate
-    Parse Events:
-      ☐ Subscribe
-      ☐ Bits
-      ☐ Follow
-      ☐ Donate
+
     
   Study topics from chat:
   ☐ vicjay79: FluentAPI , 2nd iteration, https://scottlilly.com/how-to-create-a-fluent-interface-in-c/
+
+  ☐ Left here https://dev.twitch.tv/docs/irc/tags/

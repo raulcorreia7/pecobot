@@ -208,8 +208,8 @@ namespace MightyPecoBot
         }
         private void SendOauth(string oauth)
         {
-            BotLogger.LogDebug("[ >> Sending OAUTH >");
-            SendToIRC(IRCSymbols.FormatOAuth(oauth));
+            BotLogger.LogDebug("[ >> Sending OAUTH ]");
+            Socket.Send(IRCSymbols.FormatOAuth(oauth));
         }
 
         public void SendToIRC(string message)
@@ -249,7 +249,6 @@ namespace MightyPecoBot
                     /*  Parse
                         decide what to do with data
                     */
-
                     BotLogger.LogDebug(data);
                     RunCallbacks(data);
                 }
@@ -435,7 +434,7 @@ namespace MightyPecoBot
             SendToChannel(message);
         }
 
-        public void SendMOD(string username)
+        public void SendMod(string username)
         {
             SendToChannel($"{IRCSymbols.Commands.PROMOTE_TO_MOD}, {username}");
         }
@@ -503,6 +502,26 @@ namespace MightyPecoBot
         public void SendRemoveTimeout(string username)
         {
             SendToChannel($"{IRCSymbols.Commands.UNTIMEOUT} {username}");
+        }
+
+        public void SendVIP(string username)
+        {
+            SendToChannel($"{IRCSymbols.Commands.VIP} {username}");
+        }
+
+        public void SendUNVIP(string username)
+        {
+            SendToChannel($"{IRCSymbols.Commands.UNVIP} {username}");
+        }
+
+        public void SendListVIPS()
+        {
+            SendToChannel(IRCSymbols.Commands.VIPS);
+        }
+
+        public void SendWhisper(string username, string message)
+        {
+            SendToChannel($"{IRCSymbols.Commands.WHISPER} {username} {message}");
         }
     }
 }
