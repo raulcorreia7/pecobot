@@ -23,7 +23,7 @@ class Program
 
         static void Main(string[] args)
         {
-            //Select waht log level you want (optional = NORMAL)
+            //Select what log level you want (optional = NORMAL)
             //BotLogger.LogLevel = LOG_LEVEL.DEBUG;
 
             //Read or provide your own OAUTH_TOKEN
